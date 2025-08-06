@@ -1,12 +1,14 @@
 # 쇼핑몰 FastAPI 백엔드
 
 FastAPI를 사용한 쇼핑몰 백엔드 API 서버입니다.  
-회원가입과 로그인 기능을 제공합니다.
+회원가입, 로그인, 내 정보 조회 기능을 제공합니다.
 
 ## 🚀 주요 기능
 
 - **회원가입**: 신규 고객 정보와 관심사를 PostgreSQL DB에 저장
-- **로그인**: JWT 토큰 기반 인증 시스템
+- **로그인**: 세션 기반 인증 시스템
+- **내 정보 조회**: 현재 로그인된 사용자 정보 조회
+- **로그아웃**: 세션 종료
 
 ## 📁 프로젝트 구조
 
@@ -16,7 +18,7 @@ backend/
 ├── database.py          # PostgreSQL 데이터베이스 연결 설정
 ├── models.py            # SQLAlchemy 데이터베이스 모델 (ERD 기반)
 ├── schemas.py           # Pydantic 요청/응답 스키마
-├── auth.py              # JWT 인증 및 비밀번호 해싱 (bcrypt)
+├── auth.py              # 비밀번호 해싱 (bcrypt)
 ├── crud.py              # 데이터베이스 CRUD 함수
 ├── users.py             # 사용자 관련 API 엔드포인트
 ├── create_tables.py     # 테이블 생성 스크립트
@@ -57,12 +59,23 @@ pip install -r requirements.txt
 # PostgreSQL 데이터베이스 연결 (본인 비밀번호로 수정!)
 DATABASE_URL=postgresql://postgres:password@localhost:5432/shopping_mall
 
-# JWT 비밀키
-SECRET_KEY=your-secret-key-change-this-in-production-09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
-
 # 환경 설정
 ENVIRONMENT=development
 DEBUG=True
+
+# 서버 설정
+PORT=8000
+HOST=0.0.0.0
+
+# CORS 설정
+ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+
+# 로깅 레벨
+LOG_LEVEL=info
+
+# 데이터베이스 풀 설정 (선택사항)
+DB_POOL_SIZE=10
+DB_MAX_OVERFLOW=20
 ```
 
 ### 5. 데이터베이스 테이블 생성
@@ -100,6 +113,8 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ### 사용자 인증
 - `POST /api/users/register` - 회원가입
 - `POST /api/users/login` - 로그인
+- `GET /api/users/me` - 내 정보 조회
+- `POST /api/users/logout` - 로그아웃
 
 ## 📝 API 사용 예시 (테스트 완료! ✅)
 
@@ -124,7 +139,19 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
   "password": "password123"
 }
 ```
-**응답**: `200 OK` - JWT 토큰 + 사용자 정보
+**응답**: `200 OK` - 로그인 성공 메시지 + 사용자 정보
+
+### 내 정보 조회
+```json
+GET /api/users/me
+```
+**응답**: `200 OK` - 현재 로그인된 사용자 정보
+
+### 로그아웃
+```json
+POST /api/users/logout
+```
+**응답**: `200 OK` - "로그아웃이 완료되었습니다."
 
 ### 기본 카테고리 목록
 초기 데이터로 다음 카테고리들이 생성됩니다:
@@ -159,7 +186,7 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 ### 보안
 - 비밀번호는 bcrypt로 해싱됩니다
-- JWT 토큰을 사용한 인증 시스템
+- 세션 기반 인증 시스템
 - CORS 설정으로 프론트엔드와 안전한 통신
 
 ### 에러 처리
@@ -176,8 +203,10 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 - [x] **초기 카테고리 데이터** 완료
 - [x] **회원가입 API** 정상 작동 확인
 - [x] **로그인 API** 정상 작동 확인
+- [x] **내 정보 조회 API** 정상 작동 확인
+- [x] **로그아웃 API** 정상 작동 확인
 - [x] **Swagger UI** 정상 작동 확인
-- [x] **JWT 토큰 발급** 정상 작동 확인
+- [x] **세션 기반 인증** 정상 작동 확인
 
 ## 🤝 협업 가이드
 
@@ -193,7 +222,9 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 **✅ 완전히 구현되고 테스트 완료된 기능:**
 - 회원가입 (이메일 중복 체크, 비밀번호 해싱, 관심사 저장)
-- 로그인 (JWT 토큰 발급, 사용자 인증)
+- 로그인 (세션 기반 인증)
+- 내 정보 조회 (현재 로그인된 사용자 정보)
+- 로그아웃 (세션 종료)
 - PostgreSQL 연동
 - Swagger UI 문서화
 
