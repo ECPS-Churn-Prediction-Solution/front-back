@@ -29,6 +29,7 @@ backend/
 ## ⚙️ 개발환경 설정
 
 ### 1. 가상환경 생성 및 활성화
+백엔드 폴더로 꼭 이동 - cd backend
 ```bash
 # 가상환경 생성
 python -m venv venv
@@ -46,7 +47,7 @@ pip install -r requirements.txt
 ```
 
 ### 3. PostgreSQL 설치 및 설정
-1. **PostgreSQL 다운로드**: https://www.postgresql.org/download/windows/
+1. **PostgreSQL 다운로드**: https://www.postgresql.org/download/windows/ (버전16.9)
 2. **설치 후 데이터베이스 생성**: `shopping_mall`
 3. **설치 시 설정한 비밀번호 기억하기**
 

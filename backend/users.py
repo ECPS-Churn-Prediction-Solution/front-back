@@ -6,10 +6,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse, MessageResponse
+from schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
 from crud import get_user_by_email, create_user, authenticate_user
-from auth import create_access_token
-from datetime import timedelta
 import logging
 
 # 로깅 설정
@@ -60,18 +58,18 @@ async def register_user(user_data: UserRegisterRequest, db: Session = Depends(ge
             detail="회원가입 중 오류가 발생했습니다."
         )
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)):
     """
     사용자 로그인
-    일반적인 평범한 로그인 (이메일, 비밀번호 인증 후 JWT 토큰 발급)
+    이메일, 비밀번호 인증 후 사용자 정보 반환
     
     Args:
         login_data: 로그인 요청 데이터
         db: 데이터베이스 세션
     
     Returns:
-        TokenResponse: JWT 토큰과 사용자 정보
+        LoginResponse: 로그인 성공 메시지와 사용자 정보
     
     Raises:
         HTTPException: 인증 실패
@@ -88,13 +86,6 @@ async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # JWT 액세스 토큰 생성
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": str(user.user_id)}, 
-        expires_delta=access_token_expires
-    )
-    
     # 사용자 응답 데이터 생성
     user_response = UserResponse(
         user_id=user.user_id,
@@ -108,8 +99,7 @@ async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)
     
     logger.info(f"로그인 성공: {user.email} (ID: {user.user_id})")
     
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
+    return LoginResponse(
+        message="로그인 성공",
         user=user_response
     )
