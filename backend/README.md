@@ -1,7 +1,7 @@
 # 쇼핑몰 FastAPI 백엔드
 
-FastAPI를 사용한 쇼핑몰 백엔드 API 서버입니다.  
-회원가입, 로그인, 내 정보 조회 기능을 제공합니다.
+FastAPI를 사용한 쇼핑몰 백엔드 API 서버입니다.
+회원가입, 로그인, 내 정보 조회, 장바구니 관리 기능을 제공합니다.
 
 ## 🚀 주요 기능
 
@@ -9,6 +9,7 @@ FastAPI를 사용한 쇼핑몰 백엔드 API 서버입니다.
 - **로그인**: 세션 기반 인증 시스템
 - **내 정보 조회**: 현재 로그인된 사용자 정보 조회
 - **로그아웃**: 세션 종료
+- **🛒 장바구니**: 상품 추가/조회/수량변경/삭제 (ERD 기반 구현)
 
 ## 📁 프로젝트 구조
 
@@ -21,6 +22,7 @@ backend/
 ├── auth.py              # 비밀번호 해싱 (bcrypt)
 ├── crud.py              # 데이터베이스 CRUD 함수
 ├── users.py             # 사용자 관련 API 엔드포인트
+├── cart.py              # 장바구니 관련 API 엔드포인트
 ├── create_tables.py     # 테이블 생성 스크립트
 ├── init_data.py         # 초기 카테고리 데이터 생성
 ├── requirements.txt     # 의존성 목록
@@ -83,7 +85,7 @@ DB_MAX_OVERFLOW=20
 python create_tables.py
 ```
 
-### 6. 초기 데이터 생성 (카테고리)
+### 6. 초기 데이터 생성 (카테고리 + 상품)
 ```bash
 python init_data.py
 ```
@@ -115,6 +117,12 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 - `POST /api/users/login` - 로그인
 - `GET /api/users/me` - 내 정보 조회
 - `POST /api/users/logout` - 로그아웃
+
+### 🛒 장바구니 관리
+- `GET /api/cart/` - 현재 고객의 장바구니 내용 전체 조회
+- `POST /api/cart/items` - 장바구니에 특정 옵션의 상품 추가
+- `PUT /api/cart/items/{variant_id}` - 장바구니에 담긴 상품의 수량 업데이트
+- `DELETE /api/cart/items/{variant_id}` - 장바구니에서 특정 상품을 제거
 
 ## 📝 API 사용 예시 (테스트 완료! ✅)
 
@@ -153,6 +161,38 @@ POST /api/users/logout
 ```
 **응답**: `200 OK` - "로그아웃이 완료되었습니다."
 
+## 🛒 장바구니 API 사용 예시 (테스트 완료! ✅)
+
+### 장바구니 조회
+```json
+GET /api/cart/
+```
+**응답**: `200 OK` - 장바구니 상품 목록 + 총 금액
+
+### 장바구니에 상품 추가
+```json
+{
+  "product_id": 1,
+  "quantity": 2
+}
+```
+**응답**: `201 Created` - "기본 면 티셔츠이(가) 장바구니에 추가되었습니다."
+
+### 장바구니 수량 변경
+```json
+PUT /api/cart/items/1
+{
+  "quantity": 3
+}
+```
+**응답**: `200 OK` - "장바구니 수량이 변경되었습니다."
+
+### 장바구니에서 상품 제거
+```json
+DELETE /api/cart/items/1
+```
+**응답**: `200 OK` - "상품이 장바구니에서 삭제되었습니다."
+
 ### 기본 카테고리 목록
 초기 데이터로 다음 카테고리들이 생성됩니다:
 - 1: 상의
@@ -166,6 +206,14 @@ POST /api/users/logout
 - 9: 슬랙스 (하의 하위)
 - 10: 재킷 (아우터 하위)
 
+### 테스트용 상품 목록
+초기 데이터로 다음 상품들이 생성됩니다:
+- **상품 ID 1**: 기본 면 티셔츠 (25,000원)
+- **상품 ID 2**: 프리미엄 오가닉 티셔츠 (45,000원)
+- **상품 ID 3**: 클래식 스트레이트 청바지 (89,000원)
+- **상품 ID 4**: 슬림핏 청바지 (95,000원)
+- **상품 ID 5**: 데님 재킷 (120,000원)
+
 ## 🗄️ 데이터베이스 스키마
 
 프로젝트는 다음 테이블들을 사용합니다:
@@ -176,6 +224,7 @@ POST /api/users/logout
 - **products**: 상품 정보
 - **orders**: 주문 정보
 - **order_items**: 주문 상세 항목
+- **cart_items**: 장바구니 항목 (ERD 기반)
 
 ## 🔧 개발 참고사항
 
@@ -207,6 +256,11 @@ POST /api/users/logout
 - [x] **로그아웃 API** 정상 작동 확인
 - [x] **Swagger UI** 정상 작동 확인
 - [x] **세션 기반 인증** 정상 작동 확인
+- [x] **🛒 장바구니 조회 API** 정상 작동 확인
+- [x] **🛒 장바구니 상품 추가 API** 정상 작동 확인
+- [x] **🛒 장바구니 수량 변경 API** 정상 작동 확인
+- [x] **🛒 장바구니 상품 삭제 API** 정상 작동 확인
+- [x] **ERD 기반 데이터베이스 구조** 완벽 구현
 
 ## 🤝 협업 가이드
 
@@ -225,6 +279,11 @@ POST /api/users/logout
 - 로그인 (세션 기반 인증)
 - 내 정보 조회 (현재 로그인된 사용자 정보)
 - 로그아웃 (세션 종료)
+- **🛒 장바구니 시스템 (ERD 기반 완벽 구현)**
+  - 장바구니 조회 (총 금액 계산 포함)
+  - 상품 추가 (중복 상품 수량 증가 처리)
+  - 수량 변경 (실시간 업데이트)
+  - 상품 삭제 (개별 상품 제거)
 - PostgreSQL 연동
 - Swagger UI 문서화
 
@@ -234,5 +293,63 @@ cd backend
 python main.py
 ```
 스웨거 접속: http://localhost:8000/docs
+
+## 🛒 장바구니 API 테스트 시나리오
+
+### 1️⃣ 로그인
+```json
+POST /api/users/login
+{
+  "email": "test@example.com",
+  "password": "password123"
+}
+```
+
+### 2️⃣ 장바구니에 상품 추가
+```json
+POST /api/cart/items
+{
+  "product_id": 1,
+  "quantity": 2
+}
+```
+
+### 3️⃣ 장바구니 조회
+```json
+GET /api/cart/
+```
+**응답 예시:**
+```json
+{
+  "items": [
+    {
+      "cart_item_id": 1,
+      "product_id": 1,
+      "product_name": "기본 면 티셔츠",
+      "price": 25000,
+      "quantity": 2,
+      "total_price": 50000,
+      "added_at": "2025-08-07T15:00:00"
+    }
+  ],
+  "total_items": 1,
+  "total_amount": 50000
+}
+```
+
+### 4️⃣ 수량 변경
+```json
+PUT /api/cart/items/1
+{
+  "quantity": 3
+}
+```
+
+### 5️⃣ 상품 제거
+```json
+DELETE /api/cart/items/1
+```
+
+**🎯 모든 API가 Swagger UI에서 테스트 가능합니다!**
 
 ---
