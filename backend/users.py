@@ -110,6 +110,7 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
         HTTPException: 인증 실패
     """
     logger.info(f"로그인 시도: {login_data.email}")
+    print(f"🔍 로그인 시도: {login_data.email}")  # 디버그용
     
     # 사용자 인증
     user = authenticate_user(db, login_data.email, login_data.password)

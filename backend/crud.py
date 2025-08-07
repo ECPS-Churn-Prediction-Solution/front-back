@@ -4,8 +4,8 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest
-from schemas import UserRegisterRequest
+from models import User, UserInterest, CartItem, Product
+from schemas import UserRegisterRequest, CartItemAdd
 from auth import get_password_hash, verify_password
 from typing import Optional, List
 
@@ -134,3 +134,134 @@ def get_user_interests(db: Session, user_id: int) -> List[int]:
     ).all()
     
     return [interest.category_id for interest in interests]
+
+# === 상품 관련 CRUD 함수 ===
+
+def get_product_by_id(db: Session, product_id: int) -> Optional[Product]:
+    """
+    상품 ID로 상품 조회
+
+    Args:
+        db: 데이터베이스 세션
+        product_id: 상품 ID
+
+    Returns:
+        Product: 상품 객체 (없으면 None)
+    """
+    return db.query(Product).filter(Product.product_id == product_id).first()
+
+# === 장바구니 관련 CRUD 함수 ===
+
+def get_cart_items(db: Session, user_id: int) -> List[CartItem]:
+    """
+    사용자의 장바구니 아이템들 조회
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+
+    Returns:
+        List[CartItem]: 장바구니 아이템 리스트
+    """
+    return db.query(CartItem).filter(CartItem.user_id == user_id).all()
+
+def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
+    """
+    장바구니에 상품 추가 또는 수량 증가
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        cart_item: 장바구니 추가 데이터
+
+    Returns:
+        CartItem: 장바구니 아이템 객체
+    """
+    # 이미 장바구니에 있는 상품인지 확인
+    existing_item = db.query(CartItem).filter(
+        CartItem.user_id == user_id,
+        CartItem.product_id == cart_item.product_id
+    ).first()
+
+    if existing_item:
+        # 이미 있으면 수량 증가
+        existing_item.quantity += cart_item.quantity
+        db.commit()
+        db.refresh(existing_item)
+        return existing_item
+    else:
+        # 새로 추가
+        new_item = CartItem(
+            user_id=user_id,
+            product_id=cart_item.product_id,
+            quantity=cart_item.quantity
+        )
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+        return new_item
+
+def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) -> Optional[CartItem]:
+    """
+    장바구니 상품 수량 변경
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        product_id: 상품 ID
+        quantity: 새로운 수량
+
+    Returns:
+        CartItem: 수정된 장바구니 아이템 (없으면 None)
+    """
+    cart_item = db.query(CartItem).filter(
+        CartItem.user_id == user_id,
+        CartItem.product_id == product_id
+    ).first()
+
+    if cart_item:
+        cart_item.quantity = quantity
+        db.commit()
+        db.refresh(cart_item)
+        return cart_item
+
+    return None
+
+def remove_from_cart(db: Session, user_id: int, product_id: int) -> bool:
+    """
+    장바구니에서 상품 삭제
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        product_id: 상품 ID
+
+    Returns:
+        bool: 삭제 성공 여부
+    """
+    cart_item = db.query(CartItem).filter(
+        CartItem.user_id == user_id,
+        CartItem.product_id == product_id
+    ).first()
+
+    if cart_item:
+        db.delete(cart_item)
+        db.commit()
+        return True
+
+    return False
+
+def clear_cart(db: Session, user_id: int) -> bool:
+    """
+    사용자의 장바구니 전체 비우기
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+
+    Returns:
+        bool: 삭제 성공 여부 (삭제된 항목이 있으면 True)
+    """
+    deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
+    db.commit()
+    return deleted_count > 0

@@ -35,6 +35,7 @@ class User(Base):
     # 관계 설정
     interests = relationship("UserInterest", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user")
+    cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
 
 class Category(Base):
     """
@@ -85,6 +86,7 @@ class Product(Base):
     # 관계 설정
     category = relationship("Category", back_populates="products")
     order_items = relationship("OrderItem", back_populates="product")
+    cart_items = relationship("CartItem", back_populates="product")
 
 class Order(Base):
     """
@@ -120,3 +122,20 @@ class OrderItem(Base):
     # 관계 설정
     order = relationship("Order", back_populates="order_items")
     product = relationship("Product", back_populates="order_items")
+
+class CartItem(Base):
+    """
+    장바구니 항목 테이블
+    사용자가 구매를 위해 임시로 담아둔 상품 목록
+    """
+    __tablename__ = "cart_items"
+
+    cart_item_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="장바구니 항목 고유 번호")
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="어떤 고객의 장바구니인지")
+    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="장바구니에 담은 상품")
+    quantity = Column(Integer, nullable=False, default=1, comment="담은 수량")
+    added_at = Column(TIMESTAMP, server_default=func.now(), comment="장바구니에 추가한 시점")
+
+    # 관계 설정
+    user = relationship("User", back_populates="cart_items")
+    product = relationship("Product", back_populates="cart_items")
