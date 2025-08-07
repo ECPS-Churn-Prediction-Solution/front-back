@@ -7,7 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
+import logging
 from users import router as users_router
+from cart import router as cart_router
+
+# 로깅 설정
+logger = logging.getLogger(__name__)
 
 # FastAPI 앱 생성
 app = FastAPI(
@@ -35,6 +40,7 @@ app.add_middleware(
 
 # API 라우터 등록
 app.include_router(users_router, prefix="/api/users", tags=["users"])
+app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
 
 @app.get("/", tags=["root"])
 def read_root():
@@ -63,8 +69,8 @@ def health_check():
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8000,
-        reload=True,  # 개발 모드: 코드 변경 시 자동 재시작
+        reload=False,  # 리로드 비활성화
         log_level="info"
     )

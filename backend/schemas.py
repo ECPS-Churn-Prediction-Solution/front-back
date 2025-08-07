@@ -6,6 +6,7 @@ API 요청/응답 데이터 검증 및 직렬화
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from datetime import date, datetime
+from decimal import Decimal
 from enum import Enum
 
 class GenderEnum(str, Enum):
@@ -95,5 +96,78 @@ class MessageResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "message": "작업이 성공적으로 완료되었습니다."
+            }
+        }
+
+# === 장바구니 관련 스키마 ===
+
+class CartItemAdd(BaseModel):
+    """
+    장바구니 상품 추가 요청 스키마
+    특정 옵션의 상품을 장바구니에 추가
+    """
+    product_id: int = Field(..., description="상품 ID (variant_id)")
+    quantity: int = Field(default=1, ge=1, description="수량 (최소 1개)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "product_id": 1,
+                "quantity": 2
+            }
+        }
+
+class CartItemUpdate(BaseModel):
+    """
+    장바구니 상품 수량 변경 요청 스키마
+    """
+    quantity: int = Field(..., ge=1, description="변경할 수량 (최소 1개)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "quantity": 3
+            }
+        }
+
+class CartItemResponse(BaseModel):
+    """
+    장바구니 상품 응답 스키마
+    """
+    cart_item_id: int = Field(..., description="장바구니 항목 ID")
+    product_id: int = Field(..., description="상품 ID")
+    product_name: str = Field(..., description="상품명")
+    price: Decimal = Field(..., description="상품 가격")
+    quantity: int = Field(..., description="수량")
+    total_price: Decimal = Field(..., description="항목 총 가격")
+    added_at: datetime = Field(..., description="장바구니 추가일")
+
+    class Config:
+        from_attributes = True
+
+class CartResponse(BaseModel):
+    """
+    장바구니 전체 응답 스키마
+    """
+    items: List[CartItemResponse] = Field(default=[], description="장바구니 상품 목록")
+    total_items: int = Field(..., description="총 상품 종류 수")
+    total_amount: Decimal = Field(..., description="총 금액")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "items": [
+                    {
+                        "cart_item_id": 1,
+                        "product_id": 1,
+                        "product_name": "티셔츠",
+                        "price": 25000,
+                        "quantity": 2,
+                        "total_price": 50000,
+                        "added_at": "2024-01-01T10:00:00"
+                    }
+                ],
+                "total_items": 1,
+                "total_amount": 50000
             }
         }
