@@ -3,13 +3,11 @@
 회원가입, 로그인 등의 사용자 인증 기능 제공
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from database import get_db
-from schemas import UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse, MessageResponse
-from crud import get_user_by_email, create_user, authenticate_user
-from auth import create_access_token
-from datetime import timedelta
+from schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
+from crud import get_user_by_email, create_user, authenticate_user, get_user_by_id
 import logging
 
 # 로깅 설정
@@ -18,6 +16,40 @@ logger = logging.getLogger(__name__)
 
 # 라우터 생성
 router = APIRouter()
+
+# 간단한 세션 저장소 (실제 프로덕션에서는 Redis 등을 사용)
+active_sessions = {}
+
+def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserResponse:
+    """
+    현재 로그인된 사용자 정보 반환
+    세션에서 사용자 ID를 가져와 사용자 정보를 조회
+    """
+    # 세션에서 사용자 ID 가져오기
+    user_id = request.session.get("user_id")
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="로그인이 필요합니다."
+        )
+    
+    # 데이터베이스에서 사용자 정보 조회
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="사용자를 찾을 수 없습니다."
+        )
+    
+    return UserResponse(
+        user_id=user.user_id,
+        email=user.email,
+        user_name=user.user_name,
+        gender=user.gender,
+        birthdate=user.birthdate,
+        phone_number=user.phone_number,
+        created_at=user.created_at
+    )
 
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserRegisterRequest, db: Session = Depends(get_db)):
@@ -60,18 +92,19 @@ async def register_user(user_data: UserRegisterRequest, db: Session = Depends(ge
             detail="회원가입 중 오류가 발생했습니다."
         )
 
-@router.post("/login", response_model=TokenResponse)
-async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)):
+@router.post("/login", response_model=LoginResponse)
+async def login_user(login_data: UserLoginRequest, request: Request, db: Session = Depends(get_db)):
     """
     사용자 로그인
-    일반적인 평범한 로그인 (이메일, 비밀번호 인증 후 JWT 토큰 발급)
+    이메일, 비밀번호 인증 후 사용자 정보 반환
     
     Args:
         login_data: 로그인 요청 데이터
+        request: HTTP 요청 객체 (세션 접근용)
         db: 데이터베이스 세션
     
     Returns:
-        TokenResponse: JWT 토큰과 사용자 정보
+        LoginResponse: 로그인 성공 메시지와 사용자 정보
     
     Raises:
         HTTPException: 인증 실패
@@ -88,12 +121,8 @@ async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    # JWT 액세스 토큰 생성
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(
-        data={"sub": str(user.user_id)}, 
-        expires_delta=access_token_expires
-    )
+    # 세션에 사용자 ID 저장
+    request.session["user_id"] = user.user_id
     
     # 사용자 응답 데이터 생성
     user_response = UserResponse(
@@ -108,8 +137,44 @@ async def login_user(login_data: UserLoginRequest, db: Session = Depends(get_db)
     
     logger.info(f"로그인 성공: {user.email} (ID: {user.user_id})")
     
-    return TokenResponse(
-        access_token=access_token,
-        token_type="bearer",
+    return LoginResponse(
+        message="로그인 성공",
         user=user_response
     )
+
+@router.get("/me", response_model=UserResponse)
+async def get_my_info(current_user: UserResponse = Depends(get_current_user)):
+    """
+    현재 로그인된 사용자의 정보 조회
+    
+    Args:
+        current_user: 현재 로그인된 사용자 정보 (의존성 주입)
+    
+    Returns:
+        UserResponse: 현재 사용자 정보
+    
+    Raises:
+        HTTPException: 로그인되지 않은 경우
+    """
+    logger.info(f"내 정보 조회: {current_user.email} (ID: {current_user.user_id})")
+    return current_user
+
+@router.post("/logout", response_model=MessageResponse)
+async def logout_user(request: Request):
+    """
+    사용자 로그아웃
+    세션에서 사용자 정보 제거
+    
+    Args:
+        request: HTTP 요청 객체
+    
+    Returns:
+        MessageResponse: 로그아웃 성공 메시지
+    """
+    # 세션에서 사용자 ID 제거
+    if "user_id" in request.session:
+        del request.session["user_id"]
+        logger.info("로그아웃 성공")
+        return MessageResponse(message="로그아웃이 완료되었습니다.")
+    else:
+        return MessageResponse(message="이미 로그아웃된 상태입니다.")

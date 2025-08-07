@@ -5,6 +5,7 @@ FastAPI 메인 애플리케이션
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 from users import router as users_router
 
@@ -15,6 +16,12 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs",  # Swagger UI
     redoc_url="/redoc"  # ReDoc
+)
+
+# 세션 미들웨어 추가 (세션 기반 인증용)
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="your-secret-key-change-this-in-production"
 )
 
 # CORS 미들웨어 설정 (프론트엔드 연결용)

@@ -76,13 +76,12 @@ class UserResponse(BaseModel):
     class Config:
         from_attributes = True
 
-class TokenResponse(BaseModel):
+class LoginResponse(BaseModel):
     """
-    토큰 응답 스키마
-    로그인 성공 시 JWT 토큰과 사용자 정보 반환
+    로그인 응답 스키마
+    로그인 성공 시 사용자 정보 반환
     """
-    access_token: str = Field(..., description="JWT 액세스 토큰")
-    token_type: str = Field(default="bearer", description="토큰 타입")
+    message: str = Field(default="로그인 성공", description="로그인 결과 메시지")
     user: UserResponse = Field(..., description="사용자 정보")
 
 class MessageResponse(BaseModel):
