@@ -1,0 +1,48 @@
+.App {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.main-content {
+  padding: 30px 20px 0;
+  text-align: center;
+  margin-top: 110px;
+  position: relative;
+}
+
+.main-content h1 {
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+.main-content p {
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 2.2rem;
+  color: #666;
+  margin-bottom: 100px;
+}
+
+/* Reset some default styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, Roboto, Helvetica, sans-serif;
+  background-color: #efefec;
+  /* use a single large texture image to avoid tiling seams */
+  /* place your image at public/textures/hanji-paper.jpg */
+  background-image: url('/textures/paperboard-grey-texture.jpg');
+  background-repeat: repeat;
+  background-size: 432px auto;
+  background-position: 0 0;
+
+  /*background-repeat: no-repeat;
+  /*background-size: cover;      /* fill viewport without tiling */
+  /*background-position: center top;
+  background-attachment: fixed; /* keep texture steady while scrolling */
+}

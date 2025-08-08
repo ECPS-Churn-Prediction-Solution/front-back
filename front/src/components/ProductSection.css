@@ -1,0 +1,203 @@
+/* Beatrice Deck Trial 웹폰트: 라이선스에 따라 직접 호스팅 필요 */
+@font-face {
+  font-family: 'BeatriceDeckTrial';
+  src: local('Beatrice Deck Trial Bold'), local('BeatriceDeckTrial-Bold'),
+       url('/fonts/BeatriceHeadlineTRIAL-Extrabold-BF64829e8c6ab67.woff') format('woff');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+.product-section {
+  display: flex;
+  width: 100%;
+  max-width: 1440px;
+  height: 573px;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+  position: relative;
+  margin: 0 auto;
+  padding: 0 40px;
+}
+
+.section-header {
+  position: absolute;
+  left: 20px;
+  top: 26px;
+  width: auto;
+  height: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 24px;
+}
+
+.product-section-title {
+  color: #000;
+  font-family: 'BeatriceDeckTrial', 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 48px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 48px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin: 0;
+  width: auto;
+}
+
+.product-count {
+  color: #5b5b5b;
+  font-family: 'BeatriceDeckTrial', 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 40px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  width: 47px;
+  height: 40px;
+  margin-top: 0;
+}
+
+.products-grid {
+  position: absolute;
+  top: 125px;
+  left: 40px;
+  display: grid;
+  grid-template-columns: repeat(4, 304px);
+  gap: 31px;
+  width: calc(4 * 304px + 3 * 31px);
+}
+
+.navigation-controls {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 65px;
+  width: 145px;
+  height: 40px;
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  position: relative;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.nav-btn:hover {
+  opacity: 0.8;
+}
+
+.nav-btn-border {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #A3A3A3;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.nav-btn-prev {
+  opacity: 0.66;
+}
+
+.nav-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+}
+
+.nav-icon-prev {
+  /* left arrow, no rotation */
+  opacity: 0.8;
+}
+
+
+/* Responsive adjustments */
+@media (max-width: 1300px) {
+  .product-section {
+    width: 100%;
+    max-width: 1285px;
+    padding: 0 20px;
+    box-sizing: border-box;
+  }
+
+  .section-header {
+    left: 20px;
+  }
+
+  .products-grid {
+    left: 20px;
+    gap: 20px;
+    width: calc(100% - 40px);
+    justify-content: flex-start;
+  }
+
+  .products-grid .product-card {
+    width: calc((100% - 40px) / 3);
+    min-width: 280px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .product-section {
+    height: auto;
+    padding: 40px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .section-header {
+    position: static;
+    margin-bottom: 40px;
+    width: auto;
+    height: auto;
+  }
+
+  .product-section-title {
+    font-size: 36px;
+    line-height: 32px;
+  }
+
+  .products-grid {
+    position: static;
+    gap: 15px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 20px;
+  }
+
+  .products-grid .product-card {
+    width: 280px;
+    flex-shrink: 0;
+  }
+
+  .navigation-controls {
+    position: static;
+    transform: none;
+    margin-top: 20px;
+    align-self: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-section-title {
+    font-size: 28px;
+    line-height: 26px;
+  }
+
+  .products-grid .product-card {
+    width: 250px;
+  }
+}
