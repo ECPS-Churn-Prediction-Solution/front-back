@@ -1,20 +1,25 @@
 import React from 'react';
-import Header from './components/Header';
-import ProductSection from './components/ProductSection';
-import Footer from './components/Footer';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import MainPage from './pages/MainPage';
+import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/CheckoutPage';
+import MyPage from './pages/MyPage';
+import ProductListPage from './pages/ProductListPage';
+import ProductDetailPage from './pages/ProductDetailPage';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <Header />
-      <main className="main-content">
-        <h1>Clothing Store</h1>
-        <p>Welcome to our fashion destination!</p>
-        <ProductSection />
-      </main>
-      <Footer />
-    </div>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Routes>
+        <Route path="/" element={<MainPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/me" element={<MyPage />} />
+        <Route path="/products" element={<ProductListPage />} />
+        <Route path="/products/:id" element={<ProductDetailPage />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 
