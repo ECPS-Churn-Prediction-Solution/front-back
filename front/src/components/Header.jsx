@@ -1,11 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './Header.css';
+import AuthModal from './AuthModal';
+import { getMe as mockGetMe, logout as mockLogout } from '../lib/authMock';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authTab, setAuthTab] = useState('login');
+  const [currentUser, setCurrentUser] = useState(null);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  useEffect(() => {
+    // 더미 현재 사용자 불러오기
+    const me = mockGetMe();
+    if (me) setCurrentUser(me);
+  }, []);
+
+  const openLogin = () => {
+    setAuthTab('login');
+    setAuthOpen(true);
+  };
+
+  const openRegister = () => {
+    setAuthTab('register');
+    setAuthOpen(true);
+  };
+
+  const handleLogout = () => {
+    mockLogout();
+    setCurrentUser(null);
   };
 
   return (
@@ -41,12 +67,25 @@ const Header = () => {
       </div>
 
       <div className="login-button">
-        <button className="login-btn signin-btn" aria-label="Sign in">
-          sign in
-        </button>
-        <button className="login-btn signup-btn" aria-label="Sign up">
-          sign up
-        </button>
+        {currentUser ? (
+          <>
+            <span className="welcome-text" aria-label="Welcome user">
+              {currentUser.user_name || currentUser.email} 님
+            </span>
+            <button className="login-btn" onClick={handleLogout} aria-label="Logout">
+              logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button className="login-btn signin-btn" onClick={openLogin} aria-label="Sign in">
+              sign in
+            </button>
+            <button className="login-btn signup-btn" onClick={openRegister} aria-label="Sign up">
+              sign up
+            </button>
+          </>
+        )}
       </div>
 
       <div className="search-container">
@@ -63,6 +102,12 @@ const Header = () => {
           />
         </div>
       </div>
+      <AuthModal
+        isOpen={authOpen}
+        onClose={() => setAuthOpen(false)}
+        defaultTab={authTab}
+        onAuthed={(user) => setCurrentUser(user)}
+      />
     </header>
   );
 };

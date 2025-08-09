@@ -112,6 +112,14 @@
   color: #fff;
 }
 
+.welcome-text {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  color: #333;
+  margin-right: 4px;
+}
+
 .search-container {
   position: absolute;
   left: 883px;
