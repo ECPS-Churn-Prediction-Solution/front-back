@@ -254,14 +254,102 @@ def remove_from_cart(db: Session, user_id: int, product_id: int) -> bool:
 def clear_cart(db: Session, user_id: int) -> bool:
     """
     사용자의 장바구니 전체 비우기
-
+    
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-
+    
     Returns:
-        bool: 삭제 성공 여부 (삭제된 항목이 있으면 True)
+        bool: 성공 여부
     """
-    deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
-    db.commit()
-    return deleted_count > 0
+    try:
+        # 사용자의 모든 장바구니 항목 삭제
+        deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
+        db.commit()
+        
+        print(f"사용자 {user_id}의 장바구니 {deleted_count}개 항목 삭제 완료")
+        return True
+        
+    except Exception as e:
+        print(f"장바구니 비우기 실패: {e}")
+        db.rollback()
+        return False
+
+# === 상품 관련 CRUD 함수 ===
+
+def get_products_with_filters(
+    db: Session, 
+    category_id: Optional[int] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    search: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20
+) -> tuple[List[Product], int]:
+    """
+    필터링 조건에 맞는 상품 목록 조회 (페이지네이션 포함)
+    
+    Args:
+        db: 데이터베이스 세션
+        category_id: 카테고리 ID (선택사항)
+        min_price: 최소 가격 (선택사항)
+        max_price: 최대 가격 (선택사항)
+        search: 검색어 (선택사항)
+        skip: 건너뛸 상품 수 (페이지네이션용)
+        limit: 가져올 상품 수 (페이지네이션용)
+    
+    Returns:
+        tuple: (상품 목록, 전체 상품 수)
+    """
+    # 기본 쿼리 생성 - 단순하게 Product만 조회
+    query = db.query(Product)
+    
+    # 카테고리 필터
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+    
+    # 가격 범위 필터
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+    
+    # 검색어 필터 (상품명에 포함)
+    if search:
+        query = query.filter(Product.product_name.ilike(f"%{search}%"))
+    
+    # 전체 상품 수 계산
+    total_count = query.count()
+    
+    # 페이지네이션 적용
+    products = query.offset(skip).limit(limit).all()
+    
+    return products, total_count
+
+def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Product]:
+    """
+    상품 ID로 상품과 옵션 정보 조회
+    
+    Args:
+        db: 데이터베이스 세션
+        product_id: 상품 ID
+    
+    Returns:
+        Product: 상품 객체 (옵션 포함)
+    """
+    return db.query(Product).filter(Product.product_id == product_id).first()
+
+def get_product_variants(db: Session, product_id: int) -> List:
+    """
+    상품의 모든 옵션 조회
+    
+    Args:
+        db: Session: 데이터베이스 세션
+        product_id: int: 상품 ID
+    
+    Returns:
+        List: 상품 옵션 목록
+    """
+    from models import ProductVariant
+    return db.query(ProductVariant).filter(ProductVariant.product_id == product_id).all()
+

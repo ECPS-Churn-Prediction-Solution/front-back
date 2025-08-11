@@ -10,6 +10,7 @@ import uvicorn
 import logging
 from users import router as users_router
 from cart import router as cart_router
+from products import router as products_router
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -41,6 +42,7 @@ app.add_middleware(
 # API 라우터 등록
 app.include_router(users_router, prefix="/api/users", tags=["users"])
 app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
+app.include_router(products_router)
 
 @app.get("/", tags=["root"])
 def read_root():
