@@ -31,8 +31,8 @@ async def get_cart(
     장바구니 조회
     현재 고객의 장바구니 내용 전체 조회
     """
-    logger.info(f"장바구니 조회: 사용자 ID {current_user.user_id}")
-    
+    logger.info(f"🛒 장바구니 조회: 사용자 ID {current_user.user_id}")
+
     cart_items = get_cart_items(db, current_user.user_id)
     
     # 장바구니 아이템 응답 데이터 생성
@@ -54,6 +54,9 @@ async def get_cart(
             added_at=cart_item.added_at
         ))
     
+    # 조회 결과 로그
+    logger.info(f"✅ 장바구니 조회 완료: {len(items)}개 상품, 총 {total_amount:,}원")
+
     return CartResponse(
         items=items,
         total_items=len(items),
@@ -89,15 +92,17 @@ async def add_cart_item(
         )
     
     try:
-        add_to_cart(db, current_user.user_id, cart_item)
-        logger.info(f"장바구니 추가 성공: {product.product_name} x {cart_item.quantity}")
-        return MessageResponse(message=f"{product.product_name}이(가) 장바구니에 추가되었습니다.")
-    
+        cart_result = add_to_cart(db, current_user.user_id, cart_item)
+        success_message = f"✅ 장바구니 추가 성공: {product.product_name} x {cart_item.quantity}개 (총 가격: {product.price * cart_item.quantity:,}원)"
+        logger.info(success_message)
+        return MessageResponse(message=success_message)
+
     except Exception as e:
-        logger.error(f"장바구니 추가 실패: {e}")
+        error_message = f"❌ 장바구니 추가 실패: {str(e)}"
+        logger.error(error_message)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="장바구니 추가 중 오류가 발생했습니다."
+            detail=error_message
         )
 
 @router.put("/items/{variant_id}", response_model=MessageResponse)
@@ -126,11 +131,15 @@ async def update_cart_quantity(
     if not updated_item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="장바구니에서 해당 상품을 찾을 수 없습니다."
+            detail="❌ 장바구니에서 해당 상품을 찾을 수 없습니다."
         )
 
-    logger.info(f"수량 변경 성공: 상품 ID {variant_id}, 새 수량 {cart_update.quantity}")
-    return MessageResponse(message="장바구니 수량이 변경되었습니다.")
+    # 상품 정보 조회해서 상세 메시지 생성
+    product = get_product_by_id(db, variant_id)
+    new_total = product.price * cart_update.quantity if product else 0
+    success_message = f"✅ 수량 변경 성공: {product.product_name if product else f'상품 ID {variant_id}'} → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
+    logger.info(success_message)
+    return MessageResponse(message=success_message)
 
 @router.delete("/items/{variant_id}", response_model=MessageResponse)
 async def remove_cart_item(
@@ -144,14 +153,19 @@ async def remove_cart_item(
     """
     logger.info(f"장바구니 삭제: 사용자 ID {current_user.user_id}, 상품 ID {variant_id}")
 
+    # 삭제 전에 상품 정보 조회
+    product = get_product_by_id(db, variant_id)
+    product_name = product.product_name if product else f"상품 ID {variant_id}"
+
     success = remove_from_cart(db, current_user.user_id, variant_id)
 
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="장바구니에서 해당 상품을 찾을 수 없습니다."
+            detail=f"❌ 장바구니에서 {product_name}을(를) 찾을 수 없습니다."
         )
 
-    logger.info(f"장바구니 삭제 성공: 상품 ID {variant_id}")
-    return MessageResponse(message="상품이 장바구니에서 삭제되었습니다.")
+    success_message = f"✅ 삭제 성공: {product_name}이(가) 장바구니에서 제거되었습니다."
+    logger.info(success_message)
+    return MessageResponse(message=success_message)
 
