@@ -100,7 +100,7 @@ class Order(Base):
     order_date = Column(TIMESTAMP, server_default=func.now(), comment="주문 일시")
     total_amount = Column(DECIMAL(10, 2), nullable=False, comment="주문 총액")
     status = Column(String(50), default="pending", comment="주문 상태")
-    shipping_address = Column(String(255), nullable=True, comment="배송 주소")
+    shopping_address = Column(String(255), nullable=True, comment="배송 주소")
     
     # 관계 설정
     user = relationship("User", back_populates="orders")

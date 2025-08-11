@@ -171,3 +171,73 @@ class CartResponse(BaseModel):
                 "total_amount": 50000
             }
         }
+
+# === 주문 관련 스키마 ===
+
+class OrderCreateRequest(BaseModel):
+    """
+    주문 생성 요청 스키마
+    장바구니 정보를 바탕으로 주문 생성
+    """
+    shopping_address: str = Field(..., description="배송 주소")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "shopping_address": "서울시 강남구 테헤란로 123, 456호"
+            }
+        }
+
+class OrderItemResponse(BaseModel):
+    """
+    주문 상품 응답 스키마
+    """
+    order_item_id: int = Field(..., description="주문 항목 ID")
+    product_id: int = Field(..., description="상품 ID")
+    product_name: str = Field(..., description="상품명")
+    quantity: int = Field(..., description="주문 수량")
+    price_per_item: Decimal = Field(..., description="구매 당시 개당 가격")
+    total_price: Decimal = Field(..., description="항목 총 가격")
+
+    class Config:
+        from_attributes = True
+
+class OrderResponse(BaseModel):
+    """
+    주문 응답 스키마
+    """
+    order_id: int = Field(..., description="주문 ID")
+    user_id: int = Field(..., description="주문한 사용자 ID")
+    order_date: datetime = Field(..., description="주문 일시")
+    total_amount: Decimal = Field(..., description="주문 총액")
+    status: str = Field(..., description="주문 상태")
+    shopping_address: str = Field(..., description="배송 주소")
+    items: List[OrderItemResponse] = Field(default=[], description="주문 상품 목록")
+
+    class Config:
+        from_attributes = True
+
+class OrderListResponse(BaseModel):
+    """
+    주문 목록 응답 스키마
+    """
+    orders: List[OrderResponse] = Field(default=[], description="주문 목록")
+    total_orders: int = Field(..., description="총 주문 수")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "orders": [
+                    {
+                        "order_id": 1,
+                        "user_id": 1,
+                        "order_date": "2025-08-07T15:00:00",
+                        "total_amount": 139000,
+                        "status": "pending",
+                        "shopping_address": "서울시 강남구 테헤란로 123, 456호",
+                        "items": []
+                    }
+                ],
+                "total_orders": 1
+            }
+        }
