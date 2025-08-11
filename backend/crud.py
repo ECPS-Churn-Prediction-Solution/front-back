@@ -5,7 +5,7 @@
 
 from sqlalchemy.orm import Session
 from models import User, UserInterest, CartItem, Product, Order, OrderItem
-from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest
+from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
 from decimal import Decimal
@@ -351,3 +351,55 @@ def get_order_by_id(db: Session, user_id: int, order_id: int) -> Optional[Order]
         Order.order_id == order_id,
         Order.user_id == user_id
     ).first()
+
+def create_direct_order(db: Session, user_id: int, order_data: DirectOrderRequest) -> Order:
+    """
+    즉시 주문 생성 (장바구니를 거치지 않고 바로 주문)
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        order_data: 즉시 주문 데이터
+
+    Returns:
+        Order: 생성된 주문 객체
+
+    Raises:
+        ValueError: 상품이 존재하지 않거나 재고가 부족할 때
+    """
+    # 상품 존재 여부 및 재고 확인
+    product = get_product_by_id(db, order_data.product_id)
+    if not product:
+        raise ValueError(f"상품 ID {order_data.product_id}를 찾을 수 없습니다.")
+
+    if product.stock_quantity < order_data.quantity:
+        raise ValueError(f"재고가 부족합니다. 현재 재고: {product.stock_quantity}개, 주문 수량: {order_data.quantity}개")
+
+    # 총 금액 계산
+    total_amount = product.price * order_data.quantity
+
+    # 주문 생성
+    new_order = Order(
+        user_id=user_id,
+        total_amount=total_amount,
+        status="pending",
+        shopping_address=order_data.shopping_address
+    )
+    db.add(new_order)
+    db.flush()  # order_id를 얻기 위해 flush
+
+    # 주문 상품 생성
+    order_item = OrderItem(
+        order_id=new_order.order_id,
+        product_id=order_data.product_id,
+        quantity=order_data.quantity,
+        price_per_item=product.price
+    )
+    db.add(order_item)
+
+    # 재고 차감 (선택사항)
+    # product.stock_quantity -= order_data.quantity
+
+    db.commit()
+    db.refresh(new_order)
+    return new_order

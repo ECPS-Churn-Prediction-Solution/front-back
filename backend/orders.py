@@ -8,10 +8,10 @@ from sqlalchemy.orm import Session
 from database import get_db
 from schemas import (
     OrderCreateRequest, OrderResponse, OrderListResponse,
-    MessageResponse, UserResponse, OrderItemResponse
+    MessageResponse, UserResponse, OrderItemResponse, DirectOrderRequest
 )
 from crud import (
-    create_order_from_cart, get_user_orders, get_order_by_id
+    create_order_from_cart, get_user_orders, get_order_by_id, create_direct_order
 )
 from users import get_current_user
 from decimal import Decimal
@@ -160,3 +160,44 @@ async def get_order_detail(
         shopping_address=order.shopping_address,
         items=order_items
     )
+
+@router.post("/direct", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_direct_order_api(
+    order_data: DirectOrderRequest,
+    current_user: UserResponse = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    즉시 주문 생성
+    장바구니를 거치지 않고 상품을 바로 주문
+    """
+    # 터미널용 로그
+    logger.info(f"🚀 즉시 주문 시도: 사용자 ID {current_user.user_id}, 상품 ID {order_data.product_id}, 수량 {order_data.quantity}")
+
+    try:
+        # 즉시 주문 생성
+        new_order = create_direct_order(db, current_user.user_id, order_data)
+
+        # 성공 메시지 (터미널 + Swagger 둘 다 사용)
+        success_message = f"✅ 즉시 주문 성공! 주문번호: {new_order.order_id}, 상품 수량: {order_data.quantity}개, 총 금액: {new_order.total_amount:,}원, 배송지: {new_order.shopping_address}"
+        logger.info(success_message)
+
+        # Swagger Response body에 표시될 메시지
+        return MessageResponse(message=success_message)
+
+    except ValueError as e:
+        # 상품 없음, 재고 부족 등의 비즈니스 로직 오류
+        error_message = f"❌ 즉시 주문 실패: {str(e)}"
+        logger.warning(error_message)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=error_message
+        )
+    except Exception as e:
+        # 예상치 못한 서버 오류
+        error_message = f"❌ 즉시 주문 중 서버 오류 발생: {str(e)}"
+        logger.error(error_message)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=error_message
+        )

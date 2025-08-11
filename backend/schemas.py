@@ -241,3 +241,21 @@ class OrderListResponse(BaseModel):
                 "total_orders": 1
             }
         }
+
+class DirectOrderRequest(BaseModel):
+    """
+    즉시 주문 생성 요청 스키마
+    장바구니를 거치지 않고 바로 주문
+    """
+    product_id: int = Field(..., description="주문할 상품 ID")
+    quantity: int = Field(..., ge=1, description="주문 수량 (최소 1개)")
+    shopping_address: str = Field(..., description="배송 주소")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "product_id": 1,
+                "quantity": 2,
+                "shopping_address": "서울시 강남구 테헤란로 123, 삼성타워 15층"
+            }
+        }
