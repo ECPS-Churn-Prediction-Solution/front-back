@@ -1,22 +1,20 @@
 import React from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import './CartPage.css';
 
-const CartPage = () => {
+const CouponPage = () => {
   return (
     <div className="App">
       <Header />
       <main className="main-content">
-        <section className="cart-hero">
-       
-        </section>
+        <h1>Coupon</h1>
+        <p>쿠폰 페이지</p>
       </main>
       <Footer />
     </div>
   );
 };
 
-export default CartPage;
+export default CouponPage;
 
 

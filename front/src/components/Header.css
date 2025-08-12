@@ -79,6 +79,7 @@
   top: 57px;
   display: flex;
   gap: 8px;
+  align-items: center; /* ensure vertical alignment */
 }
 
 .login-btn {
@@ -118,6 +119,59 @@
   font-size: 12px;
   color: #333;
   margin-right: 4px;
+}
+
+.mypage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mypage-icon {
+  width: 24px; /* match cart-icon width */
+  height: 24px; /* match cart-icon height */
+  margin-right: 8px;
+}
+
+.cart-link {
+  display: inline-block;
+  position: relative; /* for overlay positioning */
+}
+
+.cart-icon {
+  width: 30px;
+  height: 24px;
+  display: block;
+}
+
+.coupon-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.coupon-icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+/* Make the overlay text appear inside the .cart-icon area */
+.login-button .cart-hero__overlay {
+  position: absolute;
+  inset: 0; /* top:0; right:0; bottom:0; left:0 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  color: #fff;
+  text-transform: lowercase;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-weight: 800;
+  font-size: 9px; /* fits within 24x24 */
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  z-index: 1;
 }
 
 .search-container {
