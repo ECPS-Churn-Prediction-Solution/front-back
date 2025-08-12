@@ -291,16 +291,23 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
         raise ValueError("장바구니가 비어있습니다.")
 
     # 총 금액 계산
-    total_amount = Decimal('0')
+    total_amount = 0
     for cart_item in cart_items:
-        total_amount += cart_item.product.price * cart_item.quantity
+        total_amount += int(cart_item.product.price * cart_item.quantity)
 
     # 주문 생성
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
         status="pending",
-        shopping_address=order_data.shopping_address
+        recipient_name=order_data.recipient_name,
+        zip_code=order_data.shipping_address.zip_code,
+        address_main=order_data.shipping_address.address_main,
+        address_detail=order_data.shipping_address.address_detail,
+        phone_number=order_data.phone_number,
+        shopping_memo=order_data.shopping_memo,
+        payment_method=order_data.payment_method,
+        used_coupon_code=order_data.used_coupon_code
     )
     db.add(new_order)
     db.flush()  # order_id를 얻기 위해 flush
@@ -376,14 +383,21 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
         raise ValueError(f"재고가 부족합니다. 현재 재고: {product.stock_quantity}개, 주문 수량: {order_data.quantity}개")
 
     # 총 금액 계산
-    total_amount = product.price * order_data.quantity
+    total_amount = int(product.price * order_data.quantity)
 
     # 주문 생성
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
         status="pending",
-        shopping_address=order_data.shopping_address
+        recipient_name=order_data.recipient_name,
+        zip_code=order_data.shipping_address.zip_code,
+        address_main=order_data.shipping_address.address_main,
+        address_detail=order_data.shipping_address.address_detail,
+        phone_number=order_data.phone_number,
+        shopping_memo=order_data.shopping_memo,
+        payment_method=order_data.payment_method,
+        used_coupon_code=order_data.used_coupon_code
     )
     db.add(new_order)
     db.flush()  # order_id를 얻기 위해 flush

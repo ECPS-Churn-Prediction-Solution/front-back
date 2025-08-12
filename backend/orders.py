@@ -8,7 +8,8 @@ from sqlalchemy.orm import Session
 from database import get_db
 from schemas import (
     OrderCreateRequest, OrderResponse, OrderListResponse,
-    MessageResponse, UserResponse, OrderItemResponse, DirectOrderRequest
+    MessageResponse, UserResponse, OrderItemResponse, DirectOrderRequest,
+    OrderSuccessResponse, CustomerOrderInfo, ShippingAddress
 )
 from crud import (
     create_order_from_cart, get_user_orders, get_order_by_id, create_direct_order
@@ -24,7 +25,7 @@ logger = logging.getLogger(__name__)
 # 라우터 생성
 router = APIRouter()
 
-@router.post("/", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=OrderSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_order(
     order_data: OrderCreateRequest,
     current_user: UserResponse = Depends(get_current_user),
@@ -42,11 +43,29 @@ async def create_order(
         new_order = create_order_from_cart(db, current_user.user_id, order_data)
         
         # 성공 메시지 (터미널 + Swagger 둘 다 사용)
-        success_message = f"✅ 주문 생성 성공! 주문번호: {new_order.order_id}, 총 금액: {new_order.total_amount:,}원, 배송지: {new_order.shopping_address}"
+        total_amount_int = int(new_order.total_amount)
+        success_message = f"✅ 주문 생성 성공! 주문번호: {new_order.order_id}, 총 금액: {total_amount_int:,}원"
         logger.info(success_message)
-        
-        # Swagger Response body에 표시될 메시지
-        return MessageResponse(message=success_message)
+
+        # 고객 주문 정보 생성
+        customer_info = CustomerOrderInfo(
+            recipient_name=new_order.recipient_name,
+            shipping_address=ShippingAddress(
+                zip_code=new_order.zip_code,
+                address_main=new_order.address_main,
+                address_detail=new_order.address_detail
+            ),
+            phone_number=new_order.phone_number,
+            shopping_memo=new_order.shopping_memo,
+            payment_method=new_order.payment_method,
+            used_coupon_code=new_order.used_coupon_code
+        )
+
+        # Swagger Response body에 표시될 메시지 + 고객 정보
+        return OrderSuccessResponse(
+            message=success_message,
+            customer_info=customer_info
+        )
         
     except ValueError as e:
         # 장바구니 비어있음 등의 비즈니스 로직 오류
@@ -90,22 +109,25 @@ async def get_orders(
                 product_id=item.product_id,
                 product_name=item.product.product_name,
                 quantity=item.quantity,
-                price_per_item=item.price_per_item,
-                total_price=item.price_per_item * item.quantity
+                price_per_item=int(item.price_per_item),
+                total_price=int(item.price_per_item * item.quantity)
             ))
+
+        # 배송 주소 조합
+        full_address = f"{order.address_main}, {order.address_detail}" if order.address_detail else order.address_main
 
         order_responses.append(OrderResponse(
             order_id=order.order_id,
             user_id=order.user_id,
             order_date=order.order_date,
-            total_amount=order.total_amount,
+            total_amount=int(order.total_amount),
             status=order.status,
-            shopping_address=order.shopping_address,
+            shopping_address=full_address,
             items=order_items
         ))
 
     # 터미널용 로그
-    total_amount_sum = sum(order.total_amount for order in orders)
+    total_amount_sum = sum(int(order.total_amount) for order in orders)
     logger.info(f"✅ 주문 내역 조회 완료: {len(orders)}개 주문, 총 주문금액: {total_amount_sum:,}원")
 
     return OrderListResponse(
@@ -144,24 +166,28 @@ async def get_order_detail(
             product_id=item.product_id,
             product_name=item.product.product_name,
             quantity=item.quantity,
-            price_per_item=item.price_per_item,
-            total_price=item.price_per_item * item.quantity
+            price_per_item=int(item.price_per_item),
+            total_price=int(item.price_per_item * item.quantity)
         ))
 
     # 터미널용 로그
-    logger.info(f"✅ 주문 상세 조회 완료: 주문 ID {order_id}, 상품 {len(order_items)}개, 총 금액 {order.total_amount:,}원")
+    total_amount_int = int(order.total_amount)
+    logger.info(f"✅ 주문 상세 조회 완료: 주문 ID {order_id}, 상품 {len(order_items)}개, 총 금액 {total_amount_int:,}원")
+
+    # 배송 주소 조합
+    full_address = f"{order.address_main}, {order.address_detail}" if order.address_detail else order.address_main
 
     return OrderResponse(
         order_id=order.order_id,
         user_id=order.user_id,
         order_date=order.order_date,
-        total_amount=order.total_amount,
+        total_amount=int(order.total_amount),
         status=order.status,
-        shopping_address=order.shopping_address,
+        shopping_address=full_address,
         items=order_items
     )
 
-@router.post("/direct", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/direct", response_model=OrderSuccessResponse, status_code=status.HTTP_201_CREATED)
 async def create_direct_order_api(
     order_data: DirectOrderRequest,
     current_user: UserResponse = Depends(get_current_user),
@@ -179,11 +205,29 @@ async def create_direct_order_api(
         new_order = create_direct_order(db, current_user.user_id, order_data)
 
         # 성공 메시지 (터미널 + Swagger 둘 다 사용)
-        success_message = f"✅ 즉시 주문 성공! 주문번호: {new_order.order_id}, 상품 수량: {order_data.quantity}개, 총 금액: {new_order.total_amount:,}원, 배송지: {new_order.shopping_address}"
+        total_amount_int = int(new_order.total_amount)
+        success_message = f"✅ 즉시 주문 성공! 주문번호: {new_order.order_id}, 상품 수량: {order_data.quantity}개, 총 금액: {total_amount_int:,}원"
         logger.info(success_message)
 
-        # Swagger Response body에 표시될 메시지
-        return MessageResponse(message=success_message)
+        # 고객 주문 정보 생성
+        customer_info = CustomerOrderInfo(
+            recipient_name=new_order.recipient_name,
+            shipping_address=ShippingAddress(
+                zip_code=new_order.zip_code,
+                address_main=new_order.address_main,
+                address_detail=new_order.address_detail
+            ),
+            phone_number=new_order.phone_number,
+            shopping_memo=new_order.shopping_memo,
+            payment_method=new_order.payment_method,
+            used_coupon_code=new_order.used_coupon_code
+        )
+
+        # Swagger Response body에 표시될 메시지 + 고객 정보
+        return OrderSuccessResponse(
+            message=success_message,
+            customer_info=customer_info
+        )
 
     except ValueError as e:
         # 상품 없음, 재고 부족 등의 비즈니스 로직 오류

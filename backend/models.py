@@ -79,7 +79,7 @@ class Product(Base):
     category_id = Column(Integer, ForeignKey("categories.category_id"), nullable=False, comment="상품이 속한 카테고리")
     product_name = Column(String(255), nullable=False, comment="상품명")
     description = Column(Text, nullable=True, comment="상품 설명")
-    price = Column(DECIMAL(10, 2), nullable=False, comment="상품 가격")
+    price = Column(Integer, nullable=False, comment="상품 가격")
     stock_quantity = Column(Integer, nullable=False, default=0, comment="재고 수량")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="상품 등록일")
     
@@ -98,9 +98,18 @@ class Order(Base):
     order_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="주문 고유 번호")
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="주문한 고객 ID")
     order_date = Column(TIMESTAMP, server_default=func.now(), comment="주문 일시")
-    total_amount = Column(DECIMAL(10, 2), nullable=False, comment="주문 총액")
+    total_amount = Column(Integer, nullable=False, comment="주문 총액")
     status = Column(String(50), default="pending", comment="주문 상태")
-    shopping_address = Column(String(255), nullable=True, comment="배송 주소")
+
+    # 배송 정보
+    recipient_name = Column(String(100), nullable=False, comment="수령인 이름")
+    zip_code = Column(String(10), nullable=False, comment="우편번호")
+    address_main = Column(String(255), nullable=False, comment="기본 주소")
+    address_detail = Column(String(255), nullable=True, comment="상세 주소")
+    phone_number = Column(String(20), nullable=False, comment="연락처")
+    shopping_memo = Column(Text, nullable=True, comment="배송 메모")
+    payment_method = Column(String(50), nullable=False, comment="결제 방법")
+    used_coupon_code = Column(String(50), nullable=True, comment="사용한 쿠폰 코드")
     
     # 관계 설정
     user = relationship("User", back_populates="orders")
@@ -117,7 +126,7 @@ class OrderItem(Base):
     order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False, comment="주문 번호")
     product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="주문된 상품 번호")
     quantity = Column(Integer, nullable=False, default=1, comment="주문 수량")
-    price_per_item = Column(DECIMAL(10, 2), nullable=False, comment="구매 당시 개당 가격")
+    price_per_item = Column(Integer, nullable=False, comment="구매 당시 개당 가격")
     
     # 관계 설정
     order = relationship("Order", back_populates="order_items")

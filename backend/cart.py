@@ -12,7 +12,7 @@ from crud import (
     remove_from_cart, clear_cart, get_product_by_id
 )
 from users import get_current_user
-from decimal import Decimal
+
 import logging
 
 # 로깅 설정
@@ -37,18 +37,18 @@ async def get_cart(
     
     # 장바구니 아이템 응답 데이터 생성
     items = []
-    total_amount = Decimal('0')
+    total_amount = 0
     
     for cart_item in cart_items:
         product = cart_item.product
-        item_total = product.price * cart_item.quantity
+        item_total = int(product.price * cart_item.quantity)
         total_amount += item_total
-        
+
         items.append(CartItemResponse(
             cart_item_id=cart_item.cart_item_id,
             product_id=cart_item.product_id,
             product_name=product.product_name,
-            price=product.price,
+            price=int(product.price),
             quantity=cart_item.quantity,
             total_price=item_total,
             added_at=cart_item.added_at
@@ -93,7 +93,8 @@ async def add_cart_item(
     
     try:
         cart_result = add_to_cart(db, current_user.user_id, cart_item)
-        success_message = f"✅ 장바구니 추가 성공: {product.product_name} x {cart_item.quantity}개 (총 가격: {product.price * cart_item.quantity:,}원)"
+        total_price = int(product.price * cart_item.quantity)
+        success_message = f"✅ 장바구니 추가 성공: {product.product_name} x {cart_item.quantity}개 (총 가격: {total_price:,}원)"
         logger.info(success_message)
         return MessageResponse(message=success_message)
 
@@ -136,7 +137,7 @@ async def update_cart_quantity(
 
     # 상품 정보 조회해서 상세 메시지 생성
     product = get_product_by_id(db, variant_id)
-    new_total = product.price * cart_update.quantity if product else 0
+    new_total = int(product.price * cart_update.quantity) if product else 0
     success_message = f"✅ 수량 변경 성공: {product.product_name if product else f'상품 ID {variant_id}'} → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
     logger.info(success_message)
     return MessageResponse(message=success_message)

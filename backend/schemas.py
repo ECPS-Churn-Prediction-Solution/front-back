@@ -9,6 +9,13 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 
+class PaymentMethod(str, Enum):
+    """
+    결제 방식 선택
+    """
+    CREDIT_CARD = "credit_card"
+    CASH = "cash"
+
 class GenderEnum(str, Enum):
     """성별 Enum"""
     male = "male"
@@ -137,9 +144,9 @@ class CartItemResponse(BaseModel):
     cart_item_id: int = Field(..., description="장바구니 항목 ID")
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
-    price: Decimal = Field(..., description="상품 가격")
+    price: int = Field(..., description="상품 가격")
     quantity: int = Field(..., description="수량")
-    total_price: Decimal = Field(..., description="항목 총 가격")
+    total_price: int = Field(..., description="항목 총 가격")
     added_at: datetime = Field(..., description="장바구니 추가일")
 
     class Config:
@@ -151,7 +158,7 @@ class CartResponse(BaseModel):
     """
     items: List[CartItemResponse] = Field(default=[], description="장바구니 상품 목록")
     total_items: int = Field(..., description="총 상품 종류 수")
-    total_amount: Decimal = Field(..., description="총 금액")
+    total_amount: int = Field(..., description="총 금액")
 
     class Config:
         json_schema_extra = {
@@ -174,17 +181,48 @@ class CartResponse(BaseModel):
 
 # === 주문 관련 스키마 ===
 
+class ShippingAddress(BaseModel):
+    """
+    배송 주소 스키마
+    """
+    zip_code: str = Field(..., description="우편번호")
+    address_main: str = Field(..., description="기본 주소")
+    address_detail: str = Field(..., description="상세 주소")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "zip_code": "06134",
+                "address_main": "서울특별시 강남구 테헤란로 123",
+                "address_detail": "45층 101호"
+            }
+        }
+
 class OrderCreateRequest(BaseModel):
     """
     주문 생성 요청 스키마
     장바구니 정보를 바탕으로 주문 생성
     """
-    shopping_address: str = Field(..., description="배송 주소")
+    recipient_name: str = Field(..., description="수령인 이름")
+    shipping_address: ShippingAddress = Field(..., description="배송 주소")
+    phone_number: str = Field(..., description="연락처")
+    shopping_memo: str = Field(default="", description="배송 메모")
+    payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
+    used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "shopping_address": "서울시 강남구 테헤란로 123, 456호"
+                "recipient_name": "김민준",
+                "shipping_address": {
+                    "zip_code": "06134",
+                    "address_main": "서울특별시 강남구 테헤란로 123",
+                    "address_detail": "45층 101호"
+                },
+                "phone_number": "010-1234-5678",
+                "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                "payment_method": "credit_card",
+                "used_coupon_code": "SUMMER_SALE_20"
             }
         }
 
@@ -196,8 +234,8 @@ class OrderItemResponse(BaseModel):
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
     quantity: int = Field(..., description="주문 수량")
-    price_per_item: Decimal = Field(..., description="구매 당시 개당 가격")
-    total_price: Decimal = Field(..., description="항목 총 가격")
+    price_per_item: int = Field(..., description="구매 당시 개당 가격")
+    total_price: int = Field(..., description="항목 총 가격")
 
     class Config:
         from_attributes = True
@@ -209,7 +247,7 @@ class OrderResponse(BaseModel):
     order_id: int = Field(..., description="주문 ID")
     user_id: int = Field(..., description="주문한 사용자 ID")
     order_date: datetime = Field(..., description="주문 일시")
-    total_amount: Decimal = Field(..., description="주문 총액")
+    total_amount: int = Field(..., description="주문 총액")
     status: str = Field(..., description="주문 상태")
     shopping_address: str = Field(..., description="배송 주소")
     items: List[OrderItemResponse] = Field(default=[], description="주문 상품 목록")
@@ -249,13 +287,81 @@ class DirectOrderRequest(BaseModel):
     """
     product_id: int = Field(..., description="주문할 상품 ID")
     quantity: int = Field(..., ge=1, description="주문 수량 (최소 1개)")
-    shopping_address: str = Field(..., description="배송 주소")
+    recipient_name: str = Field(..., description="수령인 이름")
+    shipping_address: ShippingAddress = Field(..., description="배송 주소")
+    phone_number: str = Field(..., description="연락처")
+    shopping_memo: str = Field(default="", description="배송 메모")
+    payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
+    used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "product_id": 1,
                 "quantity": 2,
-                "shopping_address": "서울시 강남구 테헤란로 123, 삼성타워 15층"
+                "recipient_name": "김민준",
+                "shipping_address": {
+                    "zip_code": "06134",
+                    "address_main": "서울특별시 강남구 테헤란로 123",
+                    "address_detail": "45층 101호"
+                },
+                "phone_number": "010-1234-5678",
+                "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                "payment_method": "credit_card",
+                "used_coupon_code": "SUMMER_SALE_20"
+            }
+        }
+
+class CustomerOrderInfo(BaseModel):
+    """
+    주문한 고객 정보 스키마
+    """
+    recipient_name: str = Field(..., description="수령인 이름")
+    shipping_address: ShippingAddress = Field(..., description="배송 주소")
+    phone_number: str = Field(..., description="연락처")
+    shopping_memo: str = Field(..., description="배송 메모")
+    payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
+    used_coupon_code: str = Field(..., description="사용한 쿠폰 코드")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "recipient_name": "김민준",
+                "shipping_address": {
+                    "zip_code": "06134",
+                    "address_main": "서울특별시 강남구 테헤란로 123",
+                    "address_detail": "45층 101호"
+                },
+                "phone_number": "010-1234-5678",
+                "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                "payment_method": "credit_card",
+                "used_coupon_code": "SUMMER_SALE_20"
+            }
+        }
+
+class OrderSuccessResponse(BaseModel):
+    """
+    주문 성공 응답 스키마
+    주문 성공 메시지와 고객 정보 포함
+    """
+    message: str = Field(..., description="주문 성공 메시지")
+    customer_info: CustomerOrderInfo = Field(..., description="주문한 고객 정보")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "message": "✅ 주문 생성 성공! 주문번호: 1, 총 금액: 50,000원",
+                "customer_info": {
+                    "recipient_name": "김민준",
+                    "shipping_address": {
+                        "zip_code": "06134",
+                        "address_main": "서울특별시 강남구 테헤란로 123",
+                        "address_detail": "45층 101호"
+                    },
+                    "phone_number": "010-1234-5678",
+                    "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                    "payment_method": "credit_card",
+                    "used_coupon_code": "SUMMER_SALE_20"
+                }
             }
         }
