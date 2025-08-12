@@ -15,16 +15,39 @@ FastAPI를 사용한 쇼핑몰 백엔드 API 서버입니다.
 
 ```
 backend/
-├── main.py              # FastAPI 메인 애플리케이션
-├── database.py          # PostgreSQL 데이터베이스 연결 설정
-├── models.py            # SQLAlchemy 데이터베이스 모델 (ERD 기반)
-├── schemas.py           # Pydantic 요청/응답 스키마
-├── auth.py              # 비밀번호 해싱 (bcrypt)
-├── crud.py              # 데이터베이스 CRUD 함수
-├── users.py             # 사용자 관련 API 엔드포인트
-├── cart.py              # 장바구니 관련 API 엔드포인트
-├── create_tables.py     # 테이블 생성 스크립트
-├── init_data.py         # 초기 카테고리 데이터 생성
+├── main.py              # 서버 실행 진입점
+├── app/                 # 메인 애플리케이션 패키지
+│   ├── __init__.py
+│   ├── main.py          # FastAPI 애플리케이션
+│   ├── database.py      # SQLite 데이터베이스 연결 설정
+│   ├── api/             # API 엔드포인트들
+│   │   ├── __init__.py
+│   │   ├── users.py     # 사용자 관련 API
+│   │   ├── cart.py      # 장바구니 관련 API
+│   │   ├── orders.py    # 주문 관련 API
+│   │   └── products.py  # 상품 관련 API
+│   ├── core/            # 핵심 비즈니스 로직
+│   │   ├── __init__.py
+│   │   ├── auth.py      # 인증 및 보안 (bcrypt)
+│   │   └── crud.py      # 데이터베이스 CRUD 함수
+│   ├── models/          # SQLAlchemy 데이터베이스 모델
+│   │   ├── __init__.py
+│   │   ├── user.py      # 사용자 모델
+│   │   ├── product.py   # 상품 모델
+│   │   ├── cart.py      # 장바구니 모델
+│   │   └── order.py     # 주문 모델
+│   ├── schemas/         # Pydantic 스키마
+│   │   ├── __init__.py
+│   │   ├── user.py      # 사용자 스키마
+│   │   ├── product.py   # 상품 스키마
+│   │   ├── cart.py      # 장바구니 스키마
+│   │   └── order.py     # 주문 스키마
+│   └── utils/           # 유틸리티 함수들
+│       └── __init__.py
+├── scripts/             # 스크립트 파일들
+│   └── create_tables.py # 테이블 생성 스크립트
+├── create_tables.py     # 테이블 생성 스크립트 (루트)
+├── init_data.py         # 초기 데이터 생성
 ├── requirements.txt     # 의존성 목록
 ├── .env                 # 환경변수 설정
 └── README.md           # 프로젝트 문서
@@ -50,17 +73,13 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. PostgreSQL 설치 및 설정
-1. **PostgreSQL 다운로드**: https://www.postgresql.org/download/windows/ (버전16.9)
-2. **설치 후 데이터베이스 생성**: `shopping_mall`
-3. **설치 시 설정한 비밀번호 기억하기**
+### 3. 데이터베이스 설정 (SQLite 사용)
+SQLite를 사용하므로 별도 설치가 필요하지 않습니다.
+데이터베이스 파일은 `shopping_mall.db`로 자동 생성됩니다.
 
-### 4. 환경변수 설정
-`.env` 파일을 생성하고 다음 내용을 추가하세요:
+### 4. 환경변수 설정 (선택사항)
+`.env` 파일을 생성하고 다음 내용을 추가할 수 있습니다:
 ```env
-# PostgreSQL 데이터베이스 연결 (본인 비밀번호로 수정!)
-DATABASE_URL=postgresql://postgres:password@localhost:5432/shopping_mall
-
 # 환경 설정
 ENVIRONMENT=development
 DEBUG=True
@@ -74,10 +93,6 @@ ALLOWED_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 
 # 로깅 레벨
 LOG_LEVEL=info
-
-# 데이터베이스 풀 설정 (선택사항)
-DB_POOL_SIZE=10
-DB_MAX_OVERFLOW=20
 ```
 
 ### 5. 데이터베이스 테이블 생성

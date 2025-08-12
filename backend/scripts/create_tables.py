@@ -3,8 +3,12 @@
 ERD에 정의된 모든 테이블을 데이터베이스에 생성
 
 실행 방법:
-    python create_tables.py
+    python scripts/create_tables.py
 """
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.database import engine
 from app.models import Base

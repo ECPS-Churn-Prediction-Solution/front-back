@@ -4,9 +4,9 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum
-from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
-from auth import get_password_hash, verify_password
+from ..models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum
+from ..schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
+from .auth import get_password_hash, verify_password
 from typing import Optional, List
 from decimal import Decimal
 
@@ -99,12 +99,12 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     사용자 인증 (로그인)
     이메일과 비밀번호로 사용자 검증
-    
+
     Args:
         db: 데이터베이스 세션
         email: 사용자 이메일
         password: 평문 비밀번호
-    
+
     Returns:
         User: 인증된 사용자 객체 (인증 실패 시 None)
     """
@@ -112,28 +112,28 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     user = get_user_by_email(db, email)
     if not user:
         return None
-    
+
     # 비밀번호 검증
     if not verify_password(password, user.password_hash):
         return None
-    
+
     return user
 
 def get_user_interests(db: Session, user_id: int) -> List[int]:
     """
     사용자의 관심사 카테고리 ID 리스트 조회
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-    
+
     Returns:
         List[int]: 관심 카테고리 ID 리스트
     """
     interests = db.query(UserInterest.category_id).filter(
         UserInterest.user_id == user_id
     ).all()
-    
+
     return [interest.category_id for interest in interests]
 
 # === 상품 관련 CRUD 함수 ===
@@ -194,7 +194,7 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
     # 이미 장바구니에 있는 상품인지 확인
     existing_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == cart_item.product_id
+        CartItem.variant_id == cart_item.variant_id
     ).first()
 
     if existing_item:
@@ -207,7 +207,7 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
         # 새로 추가
         new_item = CartItem(
             user_id=user_id,
-            product_id=cart_item.product_id,
+            variant_id=cart_item.variant_id,
             quantity=cart_item.quantity
         )
         db.add(new_item)
@@ -215,14 +215,14 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
         db.refresh(new_item)
         return new_item
 
-def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) -> Optional[CartItem]:
+def update_cart_item(db: Session, user_id: int, variant_id: int, quantity: int) -> Optional[CartItem]:
     """
     장바구니 상품 수량 변경
 
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-        product_id: 상품 ID
+        variant_id: 상품 옵션 ID
         quantity: 새로운 수량
 
     Returns:
@@ -230,7 +230,7 @@ def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) 
     """
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == product_id
+        CartItem.variant_id == variant_id
     ).first()
 
     if cart_item:
@@ -241,21 +241,21 @@ def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) 
 
     return None
 
-def remove_from_cart(db: Session, user_id: int, product_id: int) -> bool:
+def remove_from_cart(db: Session, user_id: int, variant_id: int) -> bool:
     """
     장바구니에서 상품 삭제
 
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-        product_id: 상품 ID
+        variant_id: 상품 옵션 ID
 
     Returns:
         bool: 삭제 성공 여부
     """
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == product_id
+        CartItem.variant_id == variant_id
     ).first()
 
     if cart_item:
@@ -268,11 +268,11 @@ def remove_from_cart(db: Session, user_id: int, product_id: int) -> bool:
 def clear_cart(db: Session, user_id: int) -> bool:
     """
     사용자의 장바구니 전체 비우기
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-    
+
     Returns:
         bool: 성공 여부
     """
@@ -280,10 +280,8 @@ def clear_cart(db: Session, user_id: int) -> bool:
         # 사용자의 모든 장바구니 항목 삭제
         deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
         db.commit()
-        
-        print(f"사용자 {user_id}의 장바구니 {deleted_count}개 항목 삭제 완료")
-        return True
-        
+        return deleted_count > 0
+
     except Exception as e:
         print(f"장바구니 비우기 실패: {e}")
         db.rollback()
@@ -292,7 +290,7 @@ def clear_cart(db: Session, user_id: int) -> bool:
 # === 상품 관련 CRUD 함수 ===
 
 def get_products_with_filters(
-    db: Session, 
+    db: Session,
     category_id: Optional[int] = None,
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
@@ -302,7 +300,7 @@ def get_products_with_filters(
 ) -> tuple[List[Product], int]:
     """
     필터링 조건에 맞는 상품 목록 조회 (페이지네이션 포함)
-    
+
     Args:
         db: 데이터베이스 세션
         category_id: 카테고리 ID (선택사항)
@@ -311,14 +309,37 @@ def get_products_with_filters(
         search: 검색어 (선택사항)
         skip: 건너뛸 상품 수 (페이지네이션용)
         limit: 가져올 상품 수 (페이지네이션용)
-    
+
     Returns:
         tuple: (상품 목록, 전체 상품 수)
     """
+    query = db.query(Product)
 
-    deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
-    db.commit()
-    return deleted_count > 0
+    # 카테고리 필터
+    if category_id:
+        query = query.filter(Product.category_id == category_id)
+
+    # 가격 필터
+    if min_price is not None:
+        query = query.filter(Product.price >= min_price)
+    if max_price is not None:
+        query = query.filter(Product.price <= max_price)
+
+    # 검색어 필터 (상품명 또는 설명에서 검색)
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (Product.product_name.ilike(search_filter)) |
+            (Product.description.ilike(search_filter))
+        )
+
+    # 전체 개수 계산
+    total_count = query.count()
+
+    # 페이지네이션 적용하여 상품 목록 조회
+    products = query.offset(skip).limit(limit).all()
+
+    return products, total_count
 
 # === 주문 관련 CRUD 함수 ===
 
@@ -346,7 +367,8 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
     # 총 금액 계산
     total_amount = 0
     for cart_item in cart_items:
-        total_amount += int(cart_item.product.price * cart_item.quantity)
+        # cart_item.variant.product.price 기준
+        total_amount += int(cart_item.variant.product.price * cart_item.quantity)
 
     # 주문 생성
     new_order = Order(
@@ -369,9 +391,9 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
     for cart_item in cart_items:
         order_item = OrderItem(
             order_id=new_order.order_id,
-            product_id=cart_item.product_id,
+            variant_id=cart_item.variant_id,
             quantity=cart_item.quantity,
-            price_per_item=cart_item.product.price
+            price_per_item=cart_item.variant.product.price
         )
         db.add(order_item)
 
@@ -471,56 +493,28 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     db.refresh(new_order)
     return new_order
 
-    # 기본 쿼리 생성 - 단순하게 Product만 조회
-    query = db.query(Product)
-    
-    # 카테고리 필터
-    if category_id:
-        query = query.filter(Product.category_id == category_id)
-    
-    # 가격 범위 필터
-    if min_price is not None:
-        query = query.filter(Product.price >= min_price)
-    if max_price is not None:
-        query = query.filter(Product.price <= max_price)
-    
-    # 검색어 필터 (상품명에 포함)
-    if search:
-        query = query.filter(Product.product_name.ilike(f"%{search}%"))
-    
-    # 전체 상품 수 계산
-    total_count = query.count()
-    
-    # 페이지네이션 적용
-    products = query.offset(skip).limit(limit).all()
-    
-    return products, total_count
-
 def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Product]:
     """
-    상품 ID로 상품과 옵션 정보 조회
-    
+    상품 ID로 상품과 옵션들을 함께 조회
+
     Args:
         db: 데이터베이스 세션
         product_id: 상품 ID
-    
+
     Returns:
-        Product: 상품 객체 (옵션 포함)
+        Product: 상품 객체 (옵션 포함, 없으면 None)
     """
     return db.query(Product).filter(Product.product_id == product_id).first()
 
-def get_product_variants(db: Session, product_id: int) -> List:
+def get_product_variants(db: Session, product_id: int) -> List[ProductVariant]:
     """
-    상품의 모든 옵션 조회
-    
+    특정 상품의 모든 옵션들 조회
+
     Args:
-        db: Session: 데이터베이스 세션
-        product_id: int: 상품 ID
-    
+        db: 데이터베이스 세션
+        product_id: 상품 ID
+
     Returns:
-        List: 상품 옵션 목록
+        List[ProductVariant]: 상품 옵션 리스트
     """
-    from models import ProductVariant
     return db.query(ProductVariant).filter(ProductVariant.product_id == product_id).all()
-
-

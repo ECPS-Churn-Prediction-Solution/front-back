@@ -5,9 +5,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from database import get_db
-from schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
-from crud import get_user_by_email, create_user, authenticate_user, get_user_by_id
+from ..database import get_db
+from ..schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
+from ..core.crud import get_user_by_email, create_user, authenticate_user, get_user_by_id
 import logging
 
 # 로깅 설정
