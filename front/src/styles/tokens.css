@@ -1,0 +1,9 @@
+/* Design tokens: spacing, sizes, fonts */
+:root {
+  --grid-gap-section: 31px;
+  --grid-gap-list: 20px;
+  --card-width-section: 304px;
+  --font-family-display: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+}
+
+

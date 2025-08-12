@@ -1,0 +1,489 @@
+/* font-face is declared globally; removing local incomplete declaration */
+
+.products-main {
+  width: 1280px;
+  margin: 0 auto;
+  /* padding-top: 150px; */
+  position: relative;
+}
+
+.breadcrumb-section {
+  position: absolute;
+  left: 356px;
+  top: 158px;
+  width: 116px;
+  height: 18px;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: normal;
+  letter-spacing: 1px;
+}
+
+.breadcrumb-home {
+  color: rgba(0, 0, 0, 0.66);
+  font-weight: 400;
+}
+
+.breadcrumb-current {
+  color: rgba(0, 0, 0, 1);
+  font-weight: 400;
+}
+
+.products-title {
+  position: absolute;
+  left: 355px;
+  top: 185px;
+  width: 120px;
+  height: 30px;
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.products-container {
+  display: flex;
+  width: 100%;
+  position: relative;
+  top: 75px;
+}
+
+.filters-sidebar {
+  width: 315px;
+  padding-left: 50px;
+  flex-shrink: 0;
+  /* 전체 페이지 스크롤 사용: 사이드바는 스크롤 제거 */
+}
+
+.filters-title {
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 2px;
+  margin: 0 0 48px 0;
+}
+
+.size-section {
+  margin-bottom: 56px;
+}
+
+.filter-section-title {
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 2px;
+  margin: 0 0 29px 0;
+}
+
+.size-grid {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  width: 248px;
+}
+
+.size-button {
+  width: 38px;
+  height: 39px;
+  border: 1px solid #A3A3A3;
+  background: transparent;
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: normal;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.size-button:hover {
+  background: #f0f0f0;
+}
+
+.size-button.selected {
+  background: #000;
+  color: #fff;
+}
+
+.availability-section {
+  margin-bottom: 19px;
+}
+
+.filter-section-header {
+  display: flex;
+  justify-content: space-between;
+  /* align-items: center; */
+  cursor: pointer;
+  /* margin-bottom: 19px; */
+}
+
+.section-arrow {
+  width: 9px;
+  height: 5px;
+  transition: transform 0.2s ease;
+}
+
+.section-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.section-arrow.collapsed {
+  transform: rotate(0deg);
+}
+
+.availability-options {
+  margin-left: 30px;
+}
+
+.availability-option {
+  display: flex;
+  align-items: center;
+  margin-bottom: 19px;
+  cursor: pointer;
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 2px;
+}
+
+.availability-option input[type="checkbox"] {
+  width: 22px;
+  height: 23px;
+  border: 1px solid #A3A3A3;
+  margin-right: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.count {
+  font-weight: 700;
+  color: #5b5b5b;
+}
+
+.filter-sections {
+  border-top: 1px solid #C9C9C9;
+  padding-top: 19px;
+  max-height: none;
+  padding-bottom: 30px;
+}
+
+.filter-section {
+  border-bottom: 1px solid #C9C9C9;
+  padding: 18px 0;
+}
+
+.filter-section:last-child {
+  border-bottom: none;
+}
+
+/* Common filter option styles */
+.filter-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 6px 0 4px 30px;
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.color-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 0 4px 30px;
+}
+
+.color-swatch-filter {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #A3A3A3;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.color-swatch-filter.selected {
+  outline: 2px solid #000;
+}
+
+.price-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 4px 30px;
+}
+
+.price-input {
+  width: 90px;
+  height: 32px;
+  border: 1px solid #C9C9C9;
+  border-radius: 2px;
+  padding: 0 8px;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+.price-separator {
+  font-size: 14px;
+}
+
+.tag-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 0 4px 30px;
+}
+
+.tag-chip {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid #A3A3A3;
+  border-radius: 2px;
+  background: transparent;
+  color: #5E5E5E;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.tag-chip.active {
+  color: #000;
+  border-color: #5E5E5E;
+}
+
+.rating-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  padding: 18px 0 18px ;
+}
+
+.rating-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #000;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+}
+
+.stars {
+  letter-spacing: 1px;
+}
+
+.products-content {
+  flex: 1;
+  margin-left: 40px;
+}
+
+.search-and-filters {
+  display: flex;
+  align-items: flex-start;
+  gap: 45px;
+  margin-bottom: 50px;
+}
+
+.products-search-bar {
+  width: 367px;
+  height: 50px;
+  background: #D9D9D9;
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 10px;
+}
+
+.products-search-bar .search-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.search-placeholder {
+  color: rgba(0, 0, 0, 0.66);
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: normal;
+  letter-spacing: 2px;
+  margin-left: auto;
+  margin-right: 69px;
+}
+
+.category-tags {
+  display: grid;
+  grid-template-columns: repeat(5, 86px);
+  grid-template-rows: repeat(2, 24px);
+  gap: 2px;
+  width: 476px;
+}
+
+.category-tag {
+  width: 86px;
+  height: 24px;
+  border: 0.5px solid #A3A3A3;
+  background: transparent;
+  color: #5E5E5E;
+  font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+  font-size: 10px;
+  font-weight: 400;
+  line-height: normal;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.category-tag.active {
+  border: 0.5px solid #5E5E5E;
+  color: #000;
+  font-weight: 500;
+}
+
+.category-tag:hover {
+  background: #f0f0f0;
+}
+
+.product-grid.product-grid--list {
+  max-width: 875px;
+}
+
+.product-card {
+  position: relative;
+}
+
+.product-image {
+  width: 265px;
+  height: 314px;
+  border: 1px solid #D9D9D9;
+  object-fit: cover;
+  display: block;
+}
+
+/* Ensure overlay button can be positioned relative to the image */
+.product-image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.floating-add-button {
+  position: absolute;
+  left: 45%;
+  bottom: 0; /* 6시(하단 중앙) */
+  transform: translateX(-50%);
+  width: 34px;
+  height: 34px;
+  background: rgba(255, 255, 255, 0.10);
+  opacity: 0.66;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.floating-add-button:hover {
+  opacity: 1;
+}
+
+@media (max-width: 1280px) {
+  .products-main {
+    width: 100%;
+    padding: 150px 20px 0;
+  }
+  
+  .breadcrumb-section {
+    left: 20px;
+    position: relative;
+    top: 0;
+    margin-bottom: 10px;
+  }
+  
+  .products-title {
+    left: 20px;
+    position: relative;
+    top: 0;
+    margin-bottom: 30px;
+  }
+  
+  .products-container {
+    flex-direction: column;
+    top: 0;
+  }
+  
+  .filters-sidebar {
+    width: 100%;
+    padding-left: 0;
+    margin-bottom: 30px;
+  }
+  
+  .products-content {
+    margin-left: 0;
+  }
+  
+  .search-and-filters {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .products-search-bar {
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .category-tags {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    width: 100%;
+    max-width: 500px;
+  }
+  
+  .product-grid.product-grid--list {
+    max-width: none;
+  }
+  
+  .product-image {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 265/314;
+  }
+}
+
+@media (max-width: 768px) {
+  .size-grid {
+    width: 100%;
+  }
+  
+  .category-tags {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+  }
+}

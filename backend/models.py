@@ -94,6 +94,7 @@ class Product(Base):
     
     # 관계 설정
     category = relationship("Category", back_populates="products")
+
     variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
 
 
@@ -112,6 +113,30 @@ class ProductVariant(Base):
 
     # 관계 설정
     product = relationship("Product", back_populates="variants")
+    order_items = relationship("OrderItem", back_populates="variant")
+
+
+    order_items = relationship("OrderItem", back_populates="product")
+    cart_items = relationship("CartItem", back_populates="product")
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+
+class ProductVariant(Base):
+    """
+    상품 옵션 테이블
+    상품의 색상, 사이즈별 옵션 정보와 재고를 저장
+    """
+    __tablename__ = "product_variants"
+    
+    variant_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="옵션 고유 번호")
+    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="상품 ID")
+    color = Column(String(50), nullable=False, comment="색상")
+    size = Column(String(20), nullable=False, comment="사이즈")
+    stock_quantity = Column(Integer, nullable=False, default=0, comment="해당 옵션의 재고 수량")
+    price_adjustment = Column(DECIMAL(10, 2), default=0, comment="옵션별 가격 조정 (기본값 0)")
+    
+    # 관계 설정
+    product = relationship("Product", back_populates="variants")
+    cart_items = relationship("CartItem", back_populates="variant")
     order_items = relationship("OrderItem", back_populates="variant")
 
 
@@ -150,12 +175,20 @@ class OrderItem(Base):
     
     order_item_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="주문 항목 고유 번호")
     order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False, comment="주문 번호")
+
     variant_id = Column(Integer, ForeignKey("product_variants.variant_id"), nullable=False, comment="주문된 상품 옵션 번호")
+
+    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="주문된 상품 번호")
+    variant_id = Column(Integer, ForeignKey("product_variants.variant_id"), nullable=True, comment="상품 옵션 ID (색상/사이즈)")
+
     quantity = Column(Integer, nullable=False, default=1, comment="주문 수량")
     price_per_item = Column(Integer, nullable=False, comment="구매 당시 개당 가격")
 
     # 관계 설정
     order = relationship("Order", back_populates="order_items")
+
+    product = relationship("Product", back_populates="order_items")
+
     variant = relationship("ProductVariant", back_populates="order_items")
 
 class CartItem(Base):
@@ -168,11 +201,13 @@ class CartItem(Base):
     cart_item_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="장바구니 항목 고유 번호")
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="어떤 고객의 장바구니인지")
     product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="장바구니에 담은 상품")
+    variant_id = Column(Integer, ForeignKey("product_variants.variant_id"), nullable=True, comment="상품 옵션 ID (색상/사이즈)")
     quantity = Column(Integer, nullable=False, default=1, comment="담은 수량")
     added_at = Column(TIMESTAMP, server_default=func.now(), comment="장바구니에 추가한 시점")
 
     # 관계 설정
     user = relationship("User", back_populates="cart_items")
+
     product = relationship("Product")
 
 
@@ -188,3 +223,7 @@ class UserLogin(Base):
 
     # 관계 설정
     user = relationship("User")
+
+    product = relationship("Product", back_populates="cart_items")
+    variant = relationship("ProductVariant", back_populates="cart_items")
+

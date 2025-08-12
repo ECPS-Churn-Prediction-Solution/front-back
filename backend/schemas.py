@@ -179,6 +179,7 @@ class CartResponse(BaseModel):
             }
         }
 
+
 # === 주문 관련 스키마 ===
 
 class ShippingAddress(BaseModel):
@@ -238,8 +239,38 @@ class OrderItemResponse(BaseModel):
     price_per_item: int = Field(..., description="구매 당시 개당 가격")
     total_price: int = Field(..., description="항목 총 가격")
 
+# === 상품 관련 스키마 ===
+
+class ProductVariantResponse(BaseModel):
+    """
+    상품 옵션 응답 스키마
+    """
+    variant_id: int = Field(..., description="옵션 고유 ID")
+    color: str = Field(..., description="색상")
+    size: str = Field(..., description="사이즈")
+    stock_quantity: int = Field(..., description="재고 수량")
+    price_adjustment: Decimal = Field(..., description="가격 조정")
+    final_price: Decimal = Field(..., description="최종 가격 (기본가 + 조정가)")
+
     class Config:
         from_attributes = True
+
+class ProductListResponse(BaseModel):
+    """
+    상품 목록 응답 스키마
+    """
+    product_id: int = Field(..., description="상품 고유 ID")
+    product_name: str = Field(..., description="상품명")
+    description: Optional[str] = Field(None, description="상품 설명")
+    price: Decimal = Field(..., description="상품 가격")
+    category_name: str = Field(..., description="카테고리명")
+    created_at: datetime = Field(..., description="상품 등록일")
+    available_variants: int = Field(..., description="사용 가능한 옵션 수")
+
+
+    class Config:
+        from_attributes = True
+
 
 class OrderResponse(BaseModel):
     """
@@ -253,8 +284,21 @@ class OrderResponse(BaseModel):
     shopping_address: str = Field(..., description="배송 주소")
     items: List[OrderItemResponse] = Field(default=[], description="주문 상품 목록")
 
+class ProductDetailResponse(BaseModel):
+    """
+    상품 상세 응답 스키마
+    """
+    product_id: int = Field(..., description="상품 고유 ID")
+    product_name: str = Field(..., description="상품명")
+    description: Optional[str] = Field(None, description="상품 설명")
+    price: Decimal = Field(..., description="상품 가격")
+    category_name: str = Field(..., description="카테고리명")
+    created_at: datetime = Field(..., description="상품 등록일")
+    variants: List[ProductVariantResponse] = Field(..., description="상품 옵션 목록")
+
     class Config:
         from_attributes = True
+
 
 class OrderListResponse(BaseModel):
     """
@@ -361,3 +405,21 @@ class OrderSuccessResponse(BaseModel):
                 "message": "주문이 성공적으로 완료되었습니다."
             }
         }
+
+
+
+class ProductListPaginatedResponse(BaseModel):
+    """
+    페이지네이션된 상품 목록 응답 스키마
+    """
+    products: List[ProductListResponse] = Field(..., description="상품 목록")
+    total_count: int = Field(..., description="전체 상품 수")
+    total_pages: int = Field(..., description="전체 페이지 수")
+    current_page: int = Field(..., description="현재 페이지 번호")
+    page_size: int = Field(..., description="페이지당 상품 수")
+    has_next: bool = Field(..., description="다음 페이지 존재 여부")
+    has_prev: bool = Field(..., description="이전 페이지 존재 여부")
+
+    class Config:
+        from_attributes = True
+
