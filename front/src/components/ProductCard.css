@@ -97,10 +97,10 @@
 .product-price {
   color: #000;
   font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
   line-height: normal;
-  /* margin-left: auto; */
+  /* page-specific alignment handled in each page CSS */
 }
 
 .color-swatch {

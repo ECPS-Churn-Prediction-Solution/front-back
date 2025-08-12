@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './ProductListPage.css';
@@ -360,11 +361,15 @@ const ProductListPage = () => {
                 <div className="product-card">
                   <div className="product-image-container">
                     <img src={product.image} alt={product.altText} className="product-image" />
-                    <div className="floating-add-button" aria-label="Add to cart">
+                    <Link
+                      to={`/products/${product.id}`}
+                      className="floating-add-button"
+                      aria-label={`View details for ${product.name}`}
+                    >
                       <svg width="13" height="14" viewBox="0 0 13 14" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12.5 7.00005L6.5 7.00005M6.5 7.00005L0.5 7.00005M6.5 7.00005L6.5 1M6.5 7.00005L6.5 13" stroke="#0C0C0C" strokeLinecap="round"/>
                       </svg>
-                    </div>
+                    </Link>
                   </div>
                   <div className="product-details">
                     <ProductMetaRow
