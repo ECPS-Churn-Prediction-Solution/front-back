@@ -82,36 +82,31 @@ def create_initial_products():
                 "category_id": 6,  # 티셔츠
                 "product_name": "기본 면 티셔츠",
                 "description": "편안한 착용감의 기본 면 티셔츠입니다.",
-                "price": Decimal("25000"),
-                "stock_quantity": 100
+                "price": 25000
             },
             {
                 "category_id": 6,  # 티셔츠
                 "product_name": "프리미엄 오가닉 티셔츠",
                 "description": "친환경 오가닉 코튼으로 제작된 프리미엄 티셔츠입니다.",
-                "price": Decimal("45000"),
-                "stock_quantity": 50
+                "price": 45000
             },
             {
                 "category_id": 8,  # 청바지
                 "product_name": "클래식 스트레이트 청바지",
                 "description": "시대를 초월한 클래식한 스트레이트 핏 청바지입니다.",
-                "price": Decimal("89000"),
-                "stock_quantity": 75
+                "price": 89000
             },
             {
                 "category_id": 8,  # 청바지
                 "product_name": "슬림핏 청바지",
                 "description": "몸에 딱 맞는 슬림한 핏의 청바지입니다.",
-                "price": Decimal("95000"),
-                "stock_quantity": 60
+                "price": 95000
             },
             {
                 "category_id": 10,  # 재킷
                 "product_name": "데님 재킷",
                 "description": "캐주얼한 스타일의 데님 재킷입니다.",
-                "price": Decimal("120000"),
-                "stock_quantity": 30
+                "price": 120000
             }
         ]
 
@@ -121,8 +116,7 @@ def create_initial_products():
                 category_id=prod_data["category_id"],
                 product_name=prod_data["product_name"],
                 description=prod_data["description"],
-                price=prod_data["price"],
-                stock_quantity=prod_data["stock_quantity"]
+                price=prod_data["price"]
             )
             db.add(product)
 

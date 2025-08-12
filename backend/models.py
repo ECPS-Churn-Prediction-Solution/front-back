@@ -16,6 +16,13 @@ class GenderEnum(enum.Enum):
     female = "female"
     other = "other"
 
+# 배송 상태 Enum 정의
+class DeliveryStatusEnum(enum.Enum):
+    """배송 상태를 나타내는 Enum"""
+    preparing = "상품 준비중"
+    shipping = "상품 배송중"
+    delivered = "상품 배송완료"
+
 class User(Base):
     """
     사용자 테이블
@@ -30,6 +37,9 @@ class User(Base):
     gender = Column(Enum(GenderEnum), nullable=True, comment="성별")
     birthdate = Column(Date, nullable=False, comment="생년월일")
     phone_number = Column(String(20), nullable=True, comment="전화번호")
+    zip_code = Column(String(10), nullable=True, comment="우편번호")
+    address_main = Column(String(255), nullable=True, comment="기본 주소")
+    address_detail = Column(String(255), nullable=True, comment="상세 주소")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="가입일")
     
     # 관계 설정
@@ -80,13 +90,29 @@ class Product(Base):
     product_name = Column(String(255), nullable=False, comment="상품명")
     description = Column(Text, nullable=True, comment="상품 설명")
     price = Column(Integer, nullable=False, comment="상품 가격")
-    stock_quantity = Column(Integer, nullable=False, default=0, comment="재고 수량")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="상품 등록일")
     
     # 관계 설정
     category = relationship("Category", back_populates="products")
-    order_items = relationship("OrderItem", back_populates="product")
-    cart_items = relationship("CartItem", back_populates="product")
+    variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+
+
+class ProductVariant(Base):
+    """
+    상품 옵션 테이블
+    색상, 사이즈별 재고 관리
+    """
+    __tablename__ = "product_variants"
+
+    variant_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="옵션 고유 번호")
+    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="상품 ID")
+    color = Column(String(50), nullable=True, comment="색상")
+    size = Column(String(50), nullable=True, comment="사이즈")
+    stock_quantity = Column(Integer, nullable=False, default=0, comment="재고 수량")
+
+    # 관계 설정
+    product = relationship("Product", back_populates="variants")
+
 
 class Order(Base):
     """
@@ -99,17 +125,16 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="주문한 고객 ID")
     order_date = Column(TIMESTAMP, server_default=func.now(), comment="주문 일시")
     total_amount = Column(Integer, nullable=False, comment="주문 총액")
-    status = Column(String(50), default="pending", comment="주문 상태")
-
-    # 배송 정보
+    status = Column(Enum(DeliveryStatusEnum), default=DeliveryStatusEnum.preparing, comment="배송 상태")
+    shipping_address = Column(String(255), nullable=True, comment="배송 주소")
+    used_coupon_code = Column(String(50), nullable=True, comment="사용한 쿠폰 코드")
+    payment_method = Column(String(50), nullable=True, comment="결제 방법")
     recipient_name = Column(String(100), nullable=False, comment="수령인 이름")
     zip_code = Column(String(10), nullable=False, comment="우편번호")
     address_main = Column(String(255), nullable=False, comment="기본 주소")
     address_detail = Column(String(255), nullable=True, comment="상세 주소")
     phone_number = Column(String(20), nullable=False, comment="연락처")
     shopping_memo = Column(Text, nullable=True, comment="배송 메모")
-    payment_method = Column(String(50), nullable=False, comment="결제 방법")
-    used_coupon_code = Column(String(50), nullable=True, comment="사용한 쿠폰 코드")
     
     # 관계 설정
     user = relationship("User", back_populates="orders")
@@ -127,10 +152,10 @@ class OrderItem(Base):
     product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="주문된 상품 번호")
     quantity = Column(Integer, nullable=False, default=1, comment="주문 수량")
     price_per_item = Column(Integer, nullable=False, comment="구매 당시 개당 가격")
-    
+
     # 관계 설정
     order = relationship("Order", back_populates="order_items")
-    product = relationship("Product", back_populates="order_items")
+    product = relationship("Product")
 
 class CartItem(Base):
     """
@@ -147,4 +172,18 @@ class CartItem(Base):
 
     # 관계 설정
     user = relationship("User", back_populates="cart_items")
-    product = relationship("Product", back_populates="cart_items")
+    product = relationship("Product")
+
+
+class UserLogin(Base):
+    """
+    사용자 로그인 기록 테이블
+    """
+    __tablename__ = "user_logins"
+
+    login_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="로그인 기록 고유 번호")
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="사용자 ID")
+    login_at = Column(TIMESTAMP, server_default=func.now(), comment="로그인 시간")
+
+    # 관계 설정
+    user = relationship("User")

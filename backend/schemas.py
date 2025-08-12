@@ -342,26 +342,21 @@ class CustomerOrderInfo(BaseModel):
 class OrderSuccessResponse(BaseModel):
     """
     주문 성공 응답 스키마
-    주문 성공 메시지와 고객 정보 포함
+    주문 ID, 날짜, 상태, 총액, 메시지 포함
     """
+    order_id: int = Field(..., description="주문 ID")
+    order_date: datetime = Field(..., description="주문 일시")
+    status: str = Field(..., description="주문 상태")
+    total_amount: int = Field(..., description="주문 총액")
     message: str = Field(..., description="주문 성공 메시지")
-    customer_info: CustomerOrderInfo = Field(..., description="주문한 고객 정보")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "message": "✅ 주문 생성 성공! 주문번호: 1, 총 금액: 50,000원",
-                "customer_info": {
-                    "recipient_name": "김민준",
-                    "shipping_address": {
-                        "zip_code": "06134",
-                        "address_main": "서울특별시 강남구 테헤란로 123",
-                        "address_detail": "45층 101호"
-                    },
-                    "phone_number": "010-1234-5678",
-                    "shopping_memo": "부재 시 경비실에 맡겨주세요.",
-                    "payment_method": "credit_card",
-                    "used_coupon_code": "SUMMER_SALE_20"
-                }
+                "order_id": 1205,
+                "order_date": "2025-08-12T11:51:43Z",
+                "status": "paid",
+                "total_amount": 158000,
+                "message": "주문이 성공적으로 완료되었습니다."
             }
         }

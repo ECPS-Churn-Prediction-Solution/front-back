@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, Order, OrderItem
+from models import User, UserInterest, CartItem, Product, Order, OrderItem, DeliveryStatusEnum
 from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
@@ -299,7 +299,7 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
-        status="pending",
+        status=DeliveryStatusEnum.preparing,
         recipient_name=order_data.recipient_name,
         zip_code=order_data.shipping_address.zip_code,
         address_main=order_data.shipping_address.address_main,
@@ -374,13 +374,10 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     Raises:
         ValueError: 상품이 존재하지 않거나 재고가 부족할 때
     """
-    # 상품 존재 여부 및 재고 확인
+    # 상품 존재 여부 확인
     product = get_product_by_id(db, order_data.product_id)
     if not product:
         raise ValueError(f"상품 ID {order_data.product_id}를 찾을 수 없습니다.")
-
-    if product.stock_quantity < order_data.quantity:
-        raise ValueError(f"재고가 부족합니다. 현재 재고: {product.stock_quantity}개, 주문 수량: {order_data.quantity}개")
 
     # 총 금액 계산
     total_amount = int(product.price * order_data.quantity)
@@ -389,7 +386,7 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
-        status="pending",
+        status=DeliveryStatusEnum.preparing,
         recipient_name=order_data.recipient_name,
         zip_code=order_data.shipping_address.zip_code,
         address_main=order_data.shipping_address.address_main,
@@ -411,8 +408,7 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     )
     db.add(order_item)
 
-    # 재고 차감 (선택사항)
-    # product.stock_quantity -= order_data.quantity
+    # 재고 관리는 ProductVariant에서 처리
 
     db.commit()
     db.refresh(new_order)
