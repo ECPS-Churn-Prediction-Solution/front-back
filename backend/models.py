@@ -112,6 +112,7 @@ class ProductVariant(Base):
 
     # 관계 설정
     product = relationship("Product", back_populates="variants")
+    order_items = relationship("OrderItem", back_populates="variant")
 
 
 class Order(Base):
@@ -149,13 +150,13 @@ class OrderItem(Base):
     
     order_item_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="주문 항목 고유 번호")
     order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False, comment="주문 번호")
-    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False, comment="주문된 상품 번호")
+    variant_id = Column(Integer, ForeignKey("product_variants.variant_id"), nullable=False, comment="주문된 상품 옵션 번호")
     quantity = Column(Integer, nullable=False, default=1, comment="주문 수량")
     price_per_item = Column(Integer, nullable=False, comment="구매 당시 개당 가격")
 
     # 관계 설정
     order = relationship("Order", back_populates="order_items")
-    product = relationship("Product")
+    variant = relationship("ProductVariant", back_populates="order_items")
 
 class CartItem(Base):
     """

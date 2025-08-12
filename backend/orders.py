@@ -133,12 +133,16 @@ async def get_orders(
 
                             # 상품명 안전 처리
                             product_name = "상품명 없음"
-                            if hasattr(item, 'product') and item.product and hasattr(item.product, 'product_name'):
-                                product_name = item.product.product_name or "상품명 없음"
+                            product_id = 0
+                            if hasattr(item, 'variant') and item.variant and hasattr(item.variant, 'product'):
+                                if item.variant.product and hasattr(item.variant.product, 'product_name'):
+                                    product_name = item.variant.product.product_name or "상품명 없음"
+                                    product_id = item.variant.product.product_id
 
                             order_items.append(OrderItemResponse(
                                 order_item_id=item.order_item_id,
-                                product_id=item.product_id,
+                                variant_id=item.variant_id,
+                                product_id=product_id,
                                 product_name=product_name,
                                 quantity=quantity,
                                 price_per_item=price_per_item,
@@ -233,12 +237,16 @@ async def get_order_detail(
 
                     # 상품명 안전 처리
                     product_name = "상품명 없음"
-                    if hasattr(item, 'product') and item.product and hasattr(item.product, 'product_name'):
-                        product_name = item.product.product_name or "상품명 없음"
+                    product_id = 0
+                    if hasattr(item, 'variant') and item.variant and hasattr(item.variant, 'product'):
+                        if item.variant.product and hasattr(item.variant.product, 'product_name'):
+                            product_name = item.variant.product.product_name or "상품명 없음"
+                            product_id = item.variant.product.product_id
 
                     order_items.append(OrderItemResponse(
                         order_item_id=item.order_item_id,
-                        product_id=item.product_id,
+                        variant_id=item.variant_id,
+                        product_id=product_id,
                         product_name=product_name,
                         quantity=quantity,
                         price_per_item=price_per_item,
@@ -298,8 +306,8 @@ async def create_direct_order_api(
     """
     try:
         # 입력 데이터 검증
-        if not order_data.product_id or order_data.product_id <= 0:
-            raise ValueError("유효하지 않은 상품 ID입니다.")
+        if not order_data.variant_id or order_data.variant_id <= 0:
+            raise ValueError("유효하지 않은 상품 옵션 ID입니다.")
 
         if not order_data.quantity or order_data.quantity <= 0:
             raise ValueError("주문 수량은 1개 이상이어야 합니다.")
@@ -317,7 +325,7 @@ async def create_direct_order_api(
             raise ValueError("배송 주소는 필수입니다.")
 
         # 터미널용 로그
-        logger.info(f"🚀 즉시 주문 시도: 사용자 ID {current_user.user_id}, 상품 ID {order_data.product_id}, 수량 {order_data.quantity}")
+        logger.info(f"🚀 즉시 주문 시도: 사용자 ID {current_user.user_id}, 상품 옵션 ID {order_data.variant_id}, 수량 {order_data.quantity}")
 
         # 즉시 주문 생성
         new_order = create_direct_order(db, current_user.user_id, order_data)

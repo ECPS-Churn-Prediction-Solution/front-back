@@ -4,7 +4,7 @@
 """
 
 from database import SessionLocal, engine
-from models import Category, Product
+from models import Category, Product, ProductVariant
 from decimal import Decimal
 import logging
 
@@ -136,8 +136,69 @@ def create_initial_products():
     finally:
         db.close()
 
+def create_initial_variants():
+    """기본 상품 옵션 데이터 생성"""
+    db = SessionLocal()
+
+    try:
+        # 기존 상품 옵션이 있는지 확인
+        existing_variants = db.query(ProductVariant).count()
+        if existing_variants > 0:
+            logger.info("상품 옵션 데이터가 이미 존재합니다.")
+            return
+
+        # 각 상품에 대한 기본 옵션 생성
+        variants_data = [
+            # 기본 면 티셔츠 (product_id: 1)
+            {"product_id": 1, "color": "화이트", "size": "M", "stock_quantity": 50},
+            {"product_id": 1, "color": "블랙", "size": "M", "stock_quantity": 30},
+            {"product_id": 1, "color": "화이트", "size": "L", "stock_quantity": 40},
+
+            # 프리미엄 오가닉 티셔츠 (product_id: 2)
+            {"product_id": 2, "color": "베이지", "size": "M", "stock_quantity": 25},
+            {"product_id": 2, "color": "네이비", "size": "L", "stock_quantity": 20},
+
+            # 클래식 스트레이트 청바지 (product_id: 3)
+            {"product_id": 3, "color": "인디고", "size": "30", "stock_quantity": 35},
+            {"product_id": 3, "color": "인디고", "size": "32", "stock_quantity": 40},
+
+            # 슬림핏 청바지 (product_id: 4)
+            {"product_id": 4, "color": "다크블루", "size": "30", "stock_quantity": 30},
+            {"product_id": 4, "color": "다크블루", "size": "32", "stock_quantity": 30},
+
+            # 데님 재킷 (product_id: 5)
+            {"product_id": 5, "color": "라이트블루", "size": "M", "stock_quantity": 15},
+            {"product_id": 5, "color": "라이트블루", "size": "L", "stock_quantity": 15},
+        ]
+
+        for variant_data in variants_data:
+            variant = ProductVariant(
+                product_id=variant_data["product_id"],
+                color=variant_data["color"],
+                size=variant_data["size"],
+                stock_quantity=variant_data["stock_quantity"]
+            )
+            db.add(variant)
+
+        db.commit()
+
+        # 생성된 옵션 확인
+        created_variants = db.query(ProductVariant).all()
+        logger.info(f"✅ {len(created_variants)}개의 기본 상품 옵션이 생성되었습니다.")
+        logger.info("생성된 상품 옵션:")
+        for variant in created_variants:
+            logger.info(f"  {variant.variant_id}: {variant.product.product_name} - {variant.color}/{variant.size} (재고: {variant.stock_quantity}개)")
+
+    except Exception as e:
+        logger.error(f"❌ 상품 옵션 생성 중 오류: {e}")
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
 if __name__ == "__main__":
     logger.info("🚀 초기 데이터 생성을 시작합니다...")
     create_initial_categories()
     create_initial_products()
+    create_initial_variants()
     logger.info("✅ 초기 데이터 생성이 완료되었습니다!")

@@ -231,6 +231,7 @@ class OrderItemResponse(BaseModel):
     주문 상품 응답 스키마
     """
     order_item_id: int = Field(..., description="주문 항목 ID")
+    variant_id: int = Field(..., description="상품 옵션 ID")
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
     quantity: int = Field(..., description="주문 수량")
@@ -285,7 +286,7 @@ class DirectOrderRequest(BaseModel):
     즉시 주문 생성 요청 스키마
     장바구니를 거치지 않고 바로 주문
     """
-    product_id: int = Field(..., description="주문할 상품 ID")
+    variant_id: int = Field(..., description="주문할 상품 옵션 ID")
     quantity: int = Field(..., ge=1, description="주문 수량 (최소 1개)")
     recipient_name: str = Field(..., description="수령인 이름")
     shipping_address: ShippingAddress = Field(..., description="배송 주소")
@@ -297,7 +298,7 @@ class DirectOrderRequest(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "product_id": 1,
+                "variant_id": 1,
                 "quantity": 2,
                 "recipient_name": "김민준",
                 "shipping_address": {

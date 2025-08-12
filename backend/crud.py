@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, Order, OrderItem, DeliveryStatusEnum
+from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum
 from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
@@ -150,6 +150,19 @@ def get_product_by_id(db: Session, product_id: int) -> Optional[Product]:
         Product: 상품 객체 (없으면 None)
     """
     return db.query(Product).filter(Product.product_id == product_id).first()
+
+def get_variant_by_id(db: Session, variant_id: int) -> Optional[ProductVariant]:
+    """
+    상품 옵션 ID로 상품 옵션 조회
+
+    Args:
+        db: 데이터베이스 세션
+        variant_id: 상품 옵션 ID
+
+    Returns:
+        Optional[ProductVariant]: 상품 옵션 객체 또는 None
+    """
+    return db.query(ProductVariant).filter(ProductVariant.variant_id == variant_id).first()
 
 # === 장바구니 관련 CRUD 함수 ===
 
@@ -374,13 +387,16 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     Raises:
         ValueError: 상품이 존재하지 않거나 재고가 부족할 때
     """
-    # 상품 존재 여부 확인
-    product = get_product_by_id(db, order_data.product_id)
-    if not product:
-        raise ValueError(f"상품 ID {order_data.product_id}를 찾을 수 없습니다.")
+    # 상품 옵션 존재 여부 및 재고 확인
+    variant = get_variant_by_id(db, order_data.variant_id)
+    if not variant:
+        raise ValueError(f"상품 옵션 ID {order_data.variant_id}를 찾을 수 없습니다.")
 
-    # 총 금액 계산
-    total_amount = int(product.price * order_data.quantity)
+    if variant.stock_quantity < order_data.quantity:
+        raise ValueError(f"재고가 부족합니다. 현재 재고: {variant.stock_quantity}개, 주문 수량: {order_data.quantity}개")
+
+    # 총 금액 계산 (상품의 기본 가격 사용)
+    total_amount = int(variant.product.price * order_data.quantity)
 
     # 주문 생성
     new_order = Order(
@@ -402,13 +418,14 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     # 주문 상품 생성
     order_item = OrderItem(
         order_id=new_order.order_id,
-        product_id=order_data.product_id,
+        variant_id=order_data.variant_id,
         quantity=order_data.quantity,
-        price_per_item=product.price
+        price_per_item=variant.product.price
     )
     db.add(order_item)
 
-    # 재고 관리는 ProductVariant에서 처리
+    # 재고 차감
+    variant.stock_quantity -= order_data.quantity
 
     db.commit()
     db.refresh(new_order)
