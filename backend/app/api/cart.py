@@ -5,13 +5,13 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from database import get_db
-from schemas import CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse, MessageResponse, UserResponse
-from crud import (
-    get_cart_items, add_to_cart, update_cart_item, 
+from ..database import get_db
+from ..schemas import CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse, MessageResponse, UserResponse
+from ..core.crud import (
+    get_cart_items, add_to_cart, update_cart_item,
     remove_from_cart, clear_cart, get_product_by_id
 )
-from users import get_current_user
+from .users import get_current_user
 
 import logging
 
