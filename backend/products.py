@@ -6,7 +6,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
-from decimal import Decimal
 
 from database import get_db
 from crud import (
@@ -116,16 +115,11 @@ async def get_product_detail(
         # 옵션 응답 데이터 구성
         variant_responses = []
         for variant in variants:
-            # 최종 가격 계산 (기본가 + 조정가)
-            final_price = float(product.price) + float(variant.price_adjustment)
-            
             variant_response = ProductVariantResponse(
                 variant_id=variant.variant_id,
                 color=variant.color,
                 size=variant.size,
-                stock_quantity=variant.stock_quantity,
-                price_adjustment=variant.price_adjustment,
-                final_price=Decimal(str(final_price))
+                stock_quantity=variant.stock_quantity
             )
             variant_responses.append(variant_response)
         
