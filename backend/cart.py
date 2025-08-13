@@ -9,7 +9,7 @@ from database import get_db
 from schemas import CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse, MessageResponse, UserResponse
 from crud import (
     get_cart_items, add_to_cart, update_cart_item, 
-    remove_from_cart, clear_cart, get_product_by_id
+    remove_from_cart, clear_cart, get_variant_by_id
 )
 from users import get_current_user
 from decimal import Decimal
@@ -35,20 +35,22 @@ async def get_cart(
 
     cart_items = get_cart_items(db, current_user.user_id)
     
-    # 장바구니 아이템 응답 데이터 생성
+    # 장바구니 아이템 응답 데이터 생성 (ERD variant_id 기준)
     items = []
-    total_amount = Decimal('0')
+    total_amount = 0.0
     
     for cart_item in cart_items:
-        product = cart_item.product
-        item_total = product.price * cart_item.quantity
+        variant = cart_item.variant
+        product = variant.product
+        item_total = float(product.price * cart_item.quantity)
         total_amount += item_total
         
         items.append(CartItemResponse(
             cart_item_id=cart_item.cart_item_id,
-            product_id=cart_item.product_id,
+            variant_id=cart_item.variant_id,
+            product_id=product.product_id,
             product_name=product.product_name,
-            price=product.price,
+            price=float(product.price),
             quantity=cart_item.quantity,
             total_price=item_total,
             added_at=cart_item.added_at
@@ -74,14 +76,14 @@ async def add_cart_item(
     장바구니에 특정 옵션의 상품을 추가
     이미 있는 상품이면 수량 증가, 없으면 새로 추가
     """
-    logger.info(f"장바구니 추가: 사용자 ID {current_user.user_id}, 상품 ID {cart_item.product_id}")
+    logger.info(f"장바구니 추가: 사용자 ID {current_user.user_id}, 상품 옵션 ID {cart_item.variant_id}")
     
-    # 상품 존재 확인
-    product = get_product_by_id(db, cart_item.product_id)
-    if not product:
+    # 상품 옵션 존재 확인 (ERD variant_id 기준)
+    variant = get_variant_by_id(db, cart_item.variant_id)
+    if not variant:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="존재하지 않는 상품입니다."
+            detail="존재하지 않는 상품 옵션입니다."
         )
     
     # 수량 유효성 검사
@@ -93,7 +95,8 @@ async def add_cart_item(
     
     try:
         cart_result = add_to_cart(db, current_user.user_id, cart_item)
-        success_message = f"✅ 장바구니 추가 성공: {product.product_name} x {cart_item.quantity}개 (총 가격: {product.price * cart_item.quantity:,}원)"
+        total_price = float(variant.product.price * cart_item.quantity)
+        success_message = f"✅ 장바구니 추가 성공: {variant.product.product_name} ({variant.color}/{variant.size}) x {cart_item.quantity}개 (총 가격: {total_price:,}원)"
         logger.info(success_message)
         return MessageResponse(message=success_message)
 
@@ -134,10 +137,10 @@ async def update_cart_quantity(
             detail="❌ 장바구니에서 해당 상품을 찾을 수 없습니다."
         )
 
-    # 상품 정보 조회해서 상세 메시지 생성
-    product = get_product_by_id(db, variant_id)
-    new_total = product.price * cart_update.quantity if product else 0
-    success_message = f"✅ 수량 변경 성공: {product.product_name if product else f'상품 ID {variant_id}'} → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
+    # 상품 정보 조회해서 상세 메시지 생성 (variant 기준)
+    variant = get_variant_by_id(db, variant_id)
+    new_total = float(variant.product.price * cart_update.quantity) if variant else 0
+    success_message = f"✅ 수량 변경 성공: {variant.product.product_name if variant else f'상품 옵션 ID {variant_id}'} ({variant.color}/{variant.size}) → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
     logger.info(success_message)
     return MessageResponse(message=success_message)
 
@@ -153,9 +156,9 @@ async def remove_cart_item(
     """
     logger.info(f"장바구니 삭제: 사용자 ID {current_user.user_id}, 상품 ID {variant_id}")
 
-    # 삭제 전에 상품 정보 조회
-    product = get_product_by_id(db, variant_id)
-    product_name = product.product_name if product else f"상품 ID {variant_id}"
+    # 삭제 전에 상품 정보 조회 (variant 기준)
+    variant = get_variant_by_id(db, variant_id)
+    product_name = f"{variant.product.product_name} ({variant.color}/{variant.size})" if variant else f"상품 옵션 ID {variant_id}"
 
     success = remove_from_cart(db, current_user.user_id, variant_id)
 

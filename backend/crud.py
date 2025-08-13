@@ -4,8 +4,8 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product
-from schemas import UserRegisterRequest, CartItemAdd
+from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem
+from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
 
@@ -150,6 +150,19 @@ def get_product_by_id(db: Session, product_id: int) -> Optional[Product]:
     """
     return db.query(Product).filter(Product.product_id == product_id).first()
 
+def get_variant_by_id(db: Session, variant_id: int) -> Optional[ProductVariant]:
+    """
+    상품 옵션 ID로 상품 옵션 조회
+
+    Args:
+        db: 데이터베이스 세션
+        variant_id: 상품 옵션 ID
+
+    Returns:
+        Optional[ProductVariant]: 상품 옵션 객체 또는 None
+    """
+    return db.query(ProductVariant).filter(ProductVariant.variant_id == variant_id).first()
+
 # === 장바구니 관련 CRUD 함수 ===
 
 def get_cart_items(db: Session, user_id: int) -> List[CartItem]:
@@ -177,10 +190,10 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
     Returns:
         CartItem: 장바구니 아이템 객체
     """
-    # 이미 장바구니에 있는 상품인지 확인
+    # 이미 장바구니에 있는 상품인지 확인 (variant_id 기준)
     existing_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == cart_item.product_id
+        CartItem.variant_id == cart_item.variant_id
     ).first()
 
     if existing_item:
@@ -193,7 +206,7 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
         # 새로 추가
         new_item = CartItem(
             user_id=user_id,
-            product_id=cart_item.product_id,
+            variant_id=cart_item.variant_id,
             quantity=cart_item.quantity
         )
         db.add(new_item)
@@ -201,14 +214,14 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
         db.refresh(new_item)
         return new_item
 
-def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) -> Optional[CartItem]:
+def update_cart_item(db: Session, user_id: int, variant_id: int, quantity: int) -> Optional[CartItem]:
     """
     장바구니 상품 수량 변경
 
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-        product_id: 상품 ID
+        variant_id: 상품 옵션 ID
         quantity: 새로운 수량
 
     Returns:
@@ -216,7 +229,7 @@ def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) 
     """
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == product_id
+        CartItem.variant_id == variant_id
     ).first()
 
     if cart_item:
@@ -227,21 +240,21 @@ def update_cart_item(db: Session, user_id: int, product_id: int, quantity: int) 
 
     return None
 
-def remove_from_cart(db: Session, user_id: int, product_id: int) -> bool:
+def remove_from_cart(db: Session, user_id: int, variant_id: int) -> bool:
     """
     장바구니에서 상품 삭제
 
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-        product_id: 상품 ID
+        variant_id: 상품 옵션 ID
 
     Returns:
         bool: 삭제 성공 여부
     """
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.product_id == product_id
+        CartItem.variant_id == variant_id
     ).first()
 
     if cart_item:
@@ -339,17 +352,159 @@ def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Pr
     """
     return db.query(Product).filter(Product.product_id == product_id).first()
 
-def get_product_variants(db: Session, product_id: int) -> List:
+def get_product_variants(db: Session, product_id: int) -> List[ProductVariant]:
     """
     상품의 모든 옵션 조회
     
     Args:
-        db: Session: 데이터베이스 세션
-        product_id: int: 상품 ID
+        db: 데이터베이스 세션
+        product_id: 상품 ID
     
     Returns:
-        List: 상품 옵션 목록
+        List[ProductVariant]: 상품 옵션 목록
     """
-    from models import ProductVariant
     return db.query(ProductVariant).filter(ProductVariant.product_id == product_id).all()
+
+# === 주문 관련 CRUD 함수 ===
+
+def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateRequest) -> Order:
+    """
+    장바구니 정보를 바탕으로 주문 생성 (ERD variant_id 기준)
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        order_data: 주문 생성 데이터
+
+    Returns:
+        Order: 생성된 주문 객체
+
+    Raises:
+        ValueError: 장바구니가 비어있을 때
+    """
+    # 장바구니 아이템들 조회
+    cart_items = get_cart_items(db, user_id)
+
+    if not cart_items:
+        raise ValueError("장바구니가 비어있습니다.")
+
+    # 총 금액 계산 (variant.product.price 기준)
+    total_amount = 0
+    for cart_item in cart_items:
+        total_amount += float(cart_item.variant.product.price * cart_item.quantity)
+
+    # 주문 생성
+    new_order = Order(
+        user_id=user_id,
+        total_amount=total_amount,
+        status="pending",
+        shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
+        shipping_memo=order_data.shopping_memo,
+        payment_method=order_data.payment_method,
+        used_coupon_code=order_data.used_coupon_code
+    )
+    db.add(new_order)
+    db.flush()  # order_id를 얻기 위해 flush
+
+    # 주문 상품들 생성 (variant_id 기준)
+    for cart_item in cart_items:
+        order_item = OrderItem(
+            order_id=new_order.order_id,
+            variant_id=cart_item.variant_id,
+            quantity=cart_item.quantity,
+            price_per_item=cart_item.variant.product.price
+        )
+        db.add(order_item)
+
+    # 장바구니 비우기
+    clear_cart(db, user_id)
+
+    db.commit()
+    db.refresh(new_order)
+    return new_order
+
+def get_user_orders(db: Session, user_id: int) -> List[Order]:
+    """
+    사용자의 모든 주문 조회
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+
+    Returns:
+        List[Order]: 주문 리스트 (최신순)
+    """
+    return db.query(Order).filter(Order.user_id == user_id).order_by(Order.order_date.desc()).all()
+
+def get_order_by_id(db: Session, user_id: int, order_id: int) -> Optional[Order]:
+    """
+    특정 주문 상세 조회
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        order_id: 주문 ID
+
+    Returns:
+        Order: 주문 객체 (없으면 None)
+    """
+    return db.query(Order).filter(
+        Order.order_id == order_id,
+        Order.user_id == user_id
+    ).first()
+
+def create_direct_order(db: Session, user_id: int, order_data: DirectOrderRequest) -> Order:
+    """
+    즉시 주문 생성 (장바구니를 거치지 않고 바로 주문, ERD variant_id 기준)
+
+    Args:
+        db: 데이터베이스 세션
+        user_id: 사용자 ID
+        order_data: 즉시 주문 데이터
+
+    Returns:
+        Order: 생성된 주문 객체
+
+    Raises:
+        ValueError: 상품이 존재하지 않거나 재고가 부족할 때
+    """
+    # 상품 옵션 존재 여부 및 재고 확인
+    variant = get_variant_by_id(db, order_data.variant_id)
+    if not variant:
+        raise ValueError(f"상품 옵션 ID {order_data.variant_id}를 찾을 수 없습니다.")
+
+    if variant.stock_quantity < order_data.quantity:
+        raise ValueError(f"재고가 부족합니다. 현재 재고: {variant.stock_quantity}개, 주문 수량: {order_data.quantity}개")
+
+    # 총 금액 계산 (상품의 기본 가격 사용)
+    total_amount = float(variant.product.price * order_data.quantity)
+
+    # 주문 생성
+    new_order = Order(
+        user_id=user_id,
+        total_amount=total_amount,
+        status="pending",
+        shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
+        shipping_memo=order_data.shopping_memo,
+        payment_method=order_data.payment_method,
+        used_coupon_code=order_data.used_coupon_code
+    )
+    db.add(new_order)
+    db.flush()  # order_id를 얻기 위해 flush
+
+    # 주문 상품 생성 (variant_id 기준)
+    order_item = OrderItem(
+        order_id=new_order.order_id,
+        variant_id=order_data.variant_id,
+        quantity=order_data.quantity,
+        price_per_item=variant.product.price
+    )
+    db.add(order_item)
+
+    # 재고 차감
+    variant.stock_quantity -= order_data.quantity
+
+    db.commit()
+    db.refresh(new_order)
+    return new_order
 

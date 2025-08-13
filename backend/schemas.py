@@ -6,8 +6,14 @@ API 요청/응답 데이터 검증 및 직렬화
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional
 from datetime import date, datetime
-from decimal import Decimal
 from enum import Enum
+
+class PaymentMethod(str, Enum):
+    """
+    결제 방식 선택
+    """
+    CREDIT_CARD = "credit_card"
+    CASH = "cash"
 
 class GenderEnum(str, Enum):
     """성별 Enum"""
@@ -104,15 +110,15 @@ class MessageResponse(BaseModel):
 class CartItemAdd(BaseModel):
     """
     장바구니 상품 추가 요청 스키마
-    특정 옵션의 상품을 장바구니에 추가
+    ERD에 따라 variant_id를 사용
     """
-    product_id: int = Field(..., description="상품 ID (variant_id)")
+    variant_id: int = Field(..., description="상품 옵션 ID (variant_id)")
     quantity: int = Field(default=1, ge=1, description="수량 (최소 1개)")
 
     class Config:
         json_schema_extra = {
             "example": {
-                "product_id": 1,
+                "variant_id": 1,
                 "quantity": 2
             }
         }
@@ -135,11 +141,12 @@ class CartItemResponse(BaseModel):
     장바구니 상품 응답 스키마
     """
     cart_item_id: int = Field(..., description="장바구니 항목 ID")
+    variant_id: int = Field(..., description="상품 옵션 ID")
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
-    price: Decimal = Field(..., description="상품 가격")
+    price: float = Field(..., description="상품 가격")
     quantity: int = Field(..., description="수량")
-    total_price: Decimal = Field(..., description="항목 총 가격")
+    total_price: float = Field(..., description="항목 총 가격")
     added_at: datetime = Field(..., description="장바구니 추가일")
 
     class Config:
@@ -151,7 +158,7 @@ class CartResponse(BaseModel):
     """
     items: List[CartItemResponse] = Field(default=[], description="장바구니 상품 목록")
     total_items: int = Field(..., description="총 상품 종류 수")
-    total_amount: Decimal = Field(..., description="총 금액")
+    total_amount: float = Field(..., description="총 금액")
 
     class Config:
         json_schema_extra = {
@@ -159,18 +166,79 @@ class CartResponse(BaseModel):
                 "items": [
                     {
                         "cart_item_id": 1,
+                        "variant_id": 1,
                         "product_id": 1,
                         "product_name": "티셔츠",
-                        "price": 25000,
+                        "price": 25000.0,
                         "quantity": 2,
-                        "total_price": 50000,
+                        "total_price": 50000.0,
                         "added_at": "2024-01-01T10:00:00"
                     }
                 ],
                 "total_items": 1,
-                "total_amount": 50000
+                "total_amount": 50000.0
             }
         }
+
+# === 주문 관련 스키마 ===
+
+class ShippingAddress(BaseModel):
+    """
+    배송 주소 스키마
+    """
+    zip_code: str = Field(..., description="우편번호")
+    address_main: str = Field(..., description="기본 주소")
+    address_detail: str = Field(..., description="상세 주소")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "zip_code": "06134",
+                "address_main": "서울특별시 강남구 테헤란로 123",
+                "address_detail": "45층 101호"
+            }
+        }
+
+class OrderCreateRequest(BaseModel):
+    """
+    주문 생성 요청 스키마
+    장바구니 정보를 바탕으로 주문 생성
+    """
+    recipient_name: str = Field(..., description="수령인 이름")
+    shipping_address: ShippingAddress = Field(..., description="배송 주소")
+    phone_number: str = Field(..., description="연락처")
+    shopping_memo: str = Field(default="", description="배송 메모")
+    payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
+    used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "recipient_name": "김민준",
+                "shipping_address": {
+                    "zip_code": "06134",
+                    "address_main": "서울특별시 강남구 테헤란로 123",
+                    "address_detail": "45층 101호"
+                },
+                "phone_number": "010-1234-5678",
+                "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                "payment_method": "credit_card",
+                "used_coupon_code": "SUMMER_SALE_20"
+            }
+        }
+
+class OrderItemResponse(BaseModel):
+    """
+    주문 상품 응답 스키마
+    ERD에 따라 variant_id를 사용
+    """
+    order_item_id: int = Field(..., description="주문 항목 ID")
+    variant_id: int = Field(..., description="상품 옵션 ID")
+    product_id: int = Field(..., description="상품 ID")
+    product_name: str = Field(..., description="상품명")
+    quantity: int = Field(..., description="주문 수량")
+    price_per_item: float = Field(..., description="구매 당시 개당 가격")
+    total_price: float = Field(..., description="항목 총 가격")
 
 # === 상품 관련 스키마 ===
 
@@ -182,8 +250,6 @@ class ProductVariantResponse(BaseModel):
     color: str = Field(..., description="색상")
     size: str = Field(..., description="사이즈")
     stock_quantity: int = Field(..., description="재고 수량")
-    price_adjustment: Decimal = Field(..., description="가격 조정")
-    final_price: Decimal = Field(..., description="최종 가격 (기본가 + 조정가)")
 
     class Config:
         from_attributes = True
@@ -195,13 +261,25 @@ class ProductListResponse(BaseModel):
     product_id: int = Field(..., description="상품 고유 ID")
     product_name: str = Field(..., description="상품명")
     description: Optional[str] = Field(None, description="상품 설명")
-    price: Decimal = Field(..., description="상품 가격")
+    price: float = Field(..., description="상품 가격")
     category_name: str = Field(..., description="카테고리명")
     created_at: datetime = Field(..., description="상품 등록일")
     available_variants: int = Field(..., description="사용 가능한 옵션 수")
 
     class Config:
         from_attributes = True
+
+class OrderResponse(BaseModel):
+    """
+    주문 응답 스키마
+    """
+    order_id: int = Field(..., description="주문 ID")
+    user_id: int = Field(..., description="주문한 사용자 ID")
+    order_date: datetime = Field(..., description="주문 일시")
+    total_amount: float = Field(..., description="주문 총액")
+    status: str = Field(..., description="주문 상태")
+    shopping_address: str = Field(..., description="배송 주소")
+    items: List[OrderItemResponse] = Field(default=[], description="주문 상품 목록")
 
 class ProductDetailResponse(BaseModel):
     """
@@ -210,7 +288,7 @@ class ProductDetailResponse(BaseModel):
     product_id: int = Field(..., description="상품 고유 ID")
     product_name: str = Field(..., description="상품명")
     description: Optional[str] = Field(None, description="상품 설명")
-    price: Decimal = Field(..., description="상품 가격")
+    price: float = Field(..., description="상품 가격")
     category_name: str = Field(..., description="카테고리명")
     created_at: datetime = Field(..., description="상품 등록일")
     variants: List[ProductVariantResponse] = Field(..., description="상품 옵션 목록")
@@ -218,7 +296,84 @@ class ProductDetailResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class OrderListResponse(BaseModel):
+    """
+    주문 목록 응답 스키마
+    """
+    orders: List[OrderResponse] = Field(default=[], description="주문 목록")
+    total_orders: int = Field(..., description="총 주문 수")
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "orders": [
+                    {
+                        "order_id": 1,
+                        "user_id": 1,
+                        "order_date": "2025-08-07T15:00:00",
+                        "total_amount": 139000.0,
+                        "status": "pending",
+                        "shopping_address": "서울시 강남구 테헤란로 123, 456호",
+                        "items": []
+                    }
+                ],
+                "total_orders": 1
+            }
+        }
+
+class DirectOrderRequest(BaseModel):
+    """
+    즉시 주문 생성 요청 스키마
+    장바구니를 거치지 않고 바로 주문
+    """
+    variant_id: int = Field(..., description="주문할 상품 옵션 ID")
+    quantity: int = Field(..., ge=1, description="주문 수량 (최소 1개)")
+    recipient_name: str = Field(..., description="수령인 이름")
+    shipping_address: ShippingAddress = Field(..., description="배송 주소")
+    phone_number: str = Field(..., description="연락처")
+    shopping_memo: str = Field(default="", description="배송 메모")
+    payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
+    used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "variant_id": 1,
+                "quantity": 2,
+                "recipient_name": "김민준",
+                "shipping_address": {
+                    "zip_code": "06134",
+                    "address_main": "서울특별시 강남구 테헤란로 123",
+                    "address_detail": "45층 101호"
+                },
+                "phone_number": "010-1234-5678",
+                "shopping_memo": "부재 시 경비실에 맡겨주세요.",
+                "payment_method": "credit_card",
+                "used_coupon_code": "SUMMER_SALE_20"
+            }
+        }
+
+class OrderSuccessResponse(BaseModel):
+    """
+    주문 성공 응답 스키마
+    주문 ID, 날짜, 상태, 총액, 메시지 포함
+    """
+    order_id: int = Field(..., description="주문 ID")
+    order_date: datetime = Field(..., description="주문 일시")
+    status: str = Field(..., description="주문 상태")
+    total_amount: float = Field(..., description="주문 총액")
+    message: str = Field(..., description="주문 성공 메시지")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "order_id": 1205,
+                "order_date": "2025-08-12T11:51:43Z",
+                "status": "paid",
+                "total_amount": 158000.0,
+                "message": "주문이 성공적으로 완료되었습니다."
+            }
+        }
 
 class ProductListPaginatedResponse(BaseModel):
     """
