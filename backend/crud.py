@@ -291,55 +291,17 @@ def clear_cart(db: Session, user_id: int) -> bool:
 
 # === 상품 관련 CRUD 함수 ===
 
-def get_products_with_filters(
-    db: Session, 
-    category_id: Optional[int] = None,
-    min_price: Optional[float] = None,
-    max_price: Optional[float] = None,
-    search: Optional[str] = None,
-    skip: int = 0,
-    limit: int = 20
-) -> tuple[List[Product], int]:
+def get_all_products(db: Session) -> List[Product]:
     """
-    필터링 조건에 맞는 상품 목록 조회 (페이지네이션 포함)
+    모든 상품 목록 조회 (간단 버전)
     
     Args:
         db: 데이터베이스 세션
-        category_id: 카테고리 ID (선택사항)
-        min_price: 최소 가격 (선택사항)
-        max_price: 최대 가격 (선택사항)
-        search: 검색어 (선택사항)
-        skip: 건너뛸 상품 수 (페이지네이션용)
-        limit: 가져올 상품 수 (페이지네이션용)
     
     Returns:
-        tuple: (상품 목록, 전체 상품 수)
+        List[Product]: 전체 상품 목록
     """
-
-    # 기본 쿼리 생성 - Product 조회
-    query = db.query(Product)
-    
-    # 카테고리 필터
-    if category_id:
-        query = query.filter(Product.category_id == category_id)
-    
-    # 가격 범위 필터
-    if min_price is not None:
-        query = query.filter(Product.price >= min_price)
-    if max_price is not None:
-        query = query.filter(Product.price <= max_price)
-    
-    # 검색어 필터 (상품명에 포함)
-    if search:
-        query = query.filter(Product.product_name.ilike(f"%{search}%"))
-    
-    # 전체 상품 수 계산
-    total_count = query.count()
-    
-    # 페이지네이션 적용
-    products = query.offset(skip).limit(limit).all()
-    
-    return products, total_count
+    return db.query(Product).all()
 
 def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Product]:
     """

@@ -3,64 +3,32 @@
 상품 목록 조회, 상세 조회 기능 제공
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import List
 
 from database import get_db
 from crud import (
-    get_products_with_filters,
+    get_all_products,
     get_product_by_id_with_variants,
     get_product_variants
 )
 from schemas import (
     ProductListResponse,
     ProductDetailResponse,
-    ProductListPaginatedResponse,
     ProductVariantResponse
 )
 
 router = APIRouter(tags=["products"])
 
-@router.get("/", response_model=ProductListPaginatedResponse)
-async def get_products(
-    category_id: Optional[int] = Query(None, description="카테고리 ID"),
-    min_price: Optional[float] = Query(None, ge=0, description="최소 가격"),
-    max_price: Optional[float] = Query(None, ge=0, description="최대 가격"),
-    search: Optional[str] = Query(None, max_length=100, description="검색어"),
-    page: int = Query(1, ge=1, description="페이지 번호"),
-    size: int = Query(20, ge=1, le=100, description="페이지당 상품 수"),
-    db: Session = Depends(get_db)
-):
+@router.get("/", response_model=List[ProductListResponse])
+async def get_products(db: Session = Depends(get_db)):
     """
-    상품 목록 조회 (필터링 및 페이지네이션)
-    
-    - **category_id**: 특정 카테고리의 상품만 조회
-    - **min_price**: 최소 가격 필터
-    - **max_price**: 최대 가격 필터
-    - **search**: 상품명 검색
-    - **page**: 페이지 번호 (1부터 시작)
-    - **size**: 페이지당 상품 수 (최대 100개)
+    전체 상품 목록 조회 (간단 버전)
     """
     try:
-        # 페이지네이션 계산
-        skip = (page - 1) * size
-        
-        # 필터링된 상품 조회
-        products, total_count = get_products_with_filters(
-            db=db,
-            category_id=category_id,
-            min_price=min_price,
-            max_price=max_price,
-            search=search,
-            skip=skip,
-            limit=size
-        )
-        
-        # 페이지네이션 정보 계산
-        total_pages = (total_count + size - 1) // size
-        has_next = page < total_pages
-        has_prev = page > 1
+        # 전체 상품 조회
+        products = get_all_products(db)
         
         # 응답 데이터 구성
         product_responses = []
@@ -79,15 +47,7 @@ async def get_products(
             )
             product_responses.append(product_response)
         
-        return ProductListPaginatedResponse(
-            products=product_responses,
-            total_count=total_count,
-            total_pages=total_pages,
-            current_page=page,
-            page_size=size,
-            has_next=has_next,
-            has_prev=has_prev
-        )
+        return product_responses
         
     except Exception as e:
         print(f"상품 목록 조회 실패: {e}")

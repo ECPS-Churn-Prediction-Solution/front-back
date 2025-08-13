@@ -377,18 +377,5 @@ class OrderSuccessResponse(BaseModel):
             }
         }
 
-class ProductListPaginatedResponse(BaseModel):
-    """
-    페이지네이션된 상품 목록 응답 스키마
-    """
-    products: List[ProductListResponse] = Field(..., description="상품 목록")
-    total_count: int = Field(..., description="전체 상품 수")
-    total_pages: int = Field(..., description="전체 페이지 수")
-    current_page: int = Field(..., description="현재 페이지 번호")
-    page_size: int = Field(..., description="페이지당 상품 수")
-    has_next: bool = Field(..., description="다음 페이지 존재 여부")
-    has_prev: bool = Field(..., description="이전 페이지 존재 여부")
 
-    class Config:
-        from_attributes = True
 
