@@ -8,6 +8,26 @@ from typing import List, Optional
 from datetime import date, datetime
 from enum import Enum
 
+# === 카테고리 스키마 ===
+
+class CategoryResponse(BaseModel):
+    """
+    카테고리 응답 스키마
+    """
+    category_id: int = Field(..., description="카테고리 ID")
+    category_name: str = Field(..., description="카테고리명")
+    parent_id: Optional[int] = Field(None, description="상위 카테고리 ID (최상위면 null)")
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "category_id": 1,
+                "category_name": "상의",
+                "parent_id": None
+            }
+        }
+
 class PaymentMethod(str, Enum):
     """
     결제 방식 선택

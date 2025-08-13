@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum
+from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum, Category
 from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
@@ -288,6 +288,20 @@ def clear_cart(db: Session, user_id: int) -> bool:
         print(f"장바구니 비우기 실패: {e}")
         db.rollback()
         return False
+
+# === 카테고리 관련 CRUD 함수 ===
+
+def get_all_categories(db: Session) -> List[Category]:
+    """
+    모든 카테고리 목록 조회
+    
+    Args:
+        db: 데이터베이스 세션
+    
+    Returns:
+        List[Category]: 전체 카테고리 목록
+    """
+    return db.query(Category).order_by(Category.category_id).all()
 
 # === 상품 관련 CRUD 함수 ===
 
