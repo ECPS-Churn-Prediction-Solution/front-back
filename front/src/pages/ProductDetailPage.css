@@ -1,0 +1,525 @@
+/* Product Detail Page Styles */
+.product-detail-container {
+    display: flex;
+    width: 875px;
+    height: 498px;
+    position: relative;
+    margin: 0 auto;
+    padding: 49px 0;
+  }
+  
+  .product-images-section {
+    position: relative;
+    width: 470px;
+    height: 468px;
+  }
+  
+  .main-product-image {
+    width: 367px;
+    height: 438px;
+    border: 1px solid #D9D9D9;
+    position: absolute;
+    left: 0;
+    top: 30px;
+  }
+  
+  .thumbnail-gallery {
+    position: absolute;
+    left: 407px;
+    top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .thumbnail-image {
+    width: 62px;
+    height: 75px;
+    border: 1px solid #D9D9D9;
+    cursor: pointer;
+  }
+  
+  .product-info-panel {
+    width: 306px;
+    height: 498px;
+    border: 1px solid #D9D9D9;
+    position: relative;
+    margin-left: 99px;
+    background-color: #FFF;
+  }
+  
+  .close-button {
+    width: 34px;
+    height: 34px;
+    opacity: 0.66;
+    position: absolute;
+    right: 1px;
+    top: 1px;
+    cursor: pointer;
+  }
+  
+  .close-button-bg {
+    width: 34px;
+    height: 34px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: rgba(255,255,255,0.88);
+  }
+  
+  .close-icon {
+    width: 9px;
+    height: 8px;
+    transform: rotate(-41.775deg);
+    stroke-width: 0.7px;
+    stroke: #1E1E1E;
+    position: absolute;
+    left: 12px;
+    top: 11px;
+  }
+  
+  .product-title {
+    color: #000;
+    letter-spacing: 1px;
+    position: absolute;
+    left: 40px;
+    top: 51px;
+    width: 183px;
+    height: 21px;
+    font: 500 14px 'Beatrice Deck Trial', sans-serif;
+  }
+  
+  .product-price {
+    color: #000;
+    letter-spacing: 1px;
+    /* position: absolute; */
+    /* left: 40px;  */
+    /* top: 74px;  */ 
+    width: auto;
+    /* height: 18px; */
+    /* font: 500 14px 'Beatrice Deck Trial', sans-serif; */
+  }
+  
+  
+  .price-disclaimer {
+    color: rgba(0,0,0,0.55);
+    letter-spacing: 1px;
+    position: absolute;
+    left: 40px; /* 타이틀/가격과 좌측 정렬 맞춤 */
+    top: 94px; /* 더 촘촘하게 */
+    width: 150px;
+    height: 18px;
+    font: 500 12px 'Beatrice Trial', sans-serif;
+  }
+  
+  .product-description {
+    width: 244px;
+    color: #000;
+    letter-spacing: 1px;
+    position: absolute;
+    left: 40px;
+    top: 118px; /* 더 촘촘하게 */
+    height: 36px;
+    font: 500 12px 'Beatrice Deck Trial', sans-serif;
+  }
+  
+  .option-label {
+    color: #000;
+    letter-spacing: 2px;
+    position: absolute;
+    left: 40px;
+    font: 250 12px 'Beatrice Deck Trial', sans-serif;
+  }
+  
+  .color-label {
+    top: 250px; /* 더 촘촘하게 */
+  }
+  
+  .size-label {
+    top: 318px; /* 더 촘촘하게 */
+  }
+  
+  .color-options {
+    width: 230px;
+    height: 36px;
+    position: absolute;
+    left: 40px;
+    top: 272px; /* 더 촘촘하게 */
+    display: flex;
+    gap: 4px;
+  }
+  
+  .color-option {
+    width: 35px;
+    height: 36px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+  
+  .color-option-light-gray {
+    background-color: #D9D9D9;
+  }
+  
+  .color-option-gray {
+    background-color: #A9A9A9;
+  }
+  
+  .color-option-black {
+    background-color: #1E1E1E;
+  }
+  
+  .color-option-mint {
+    background-color: #A6D6CA;
+  }
+  
+  .color-option-white {
+    background-color: #FFF;
+    border: 1px solid #E5E5E5;
+  }
+  
+  .color-option-blue {
+    background-color: #B9C1E8;
+  }
+  
+  .size-options {
+    width: 230px;
+    height: 36px;
+    position: absolute;
+    left: 40px;
+    top: 340px; /* 더 촘촘하게 */
+    display: flex;
+    gap: 4px;
+  }
+  
+  .quantity-stepper {
+    position: absolute;
+    left: 40px;
+    top: 380px; /* 사이즈 옵션 바로 아래 */
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .qty-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #A3A3A3;
+    background: #fff;
+    color: #000;
+    font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 16px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  .qty-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .qty-value {
+    min-width: 28px;
+    text-align: center;
+    font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 14px;
+    color: #000;
+  }
+  
+  .size-option {
+    width: 35px;
+    height: 36px;
+    border: 1px solid #A3A3A3;
+    background: #fff;
+    position: relative;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .size-text {
+    color: #000;
+    text-align: center;
+    font: 500 10px 'Beatrice Deck Trial', sans-serif;
+  }
+  
+  .color-option.selected {
+    outline: 2px solid #000;
+  }
+  
+  .size-option.selected {
+    background: #000;
+    color: #fff;
+  }
+  
+  .actions-row {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .buy-now-button {
+    width: 200px;
+    height: 40px;
+    padding: 0 16px;
+    background: #000;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
+    font-size: 12px;
+  }
+  
+  .buy-now-button:disabled,
+  .add-to-cart-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .size-guide-link {
+    color: rgba(0,0,0,0.55);
+    position: absolute;
+    left: 41px;
+    top: 385px; /* 더 촘촘하게 */
+    width: 209px;
+    height: 15px;
+    cursor: pointer;
+    font: 400 10px 'Beatrice Trial', sans-serif;
+  }
+  
+  .add-to-cart-button {
+    width: 229px;
+    height: 40px;
+    position: absolute;
+    left: 41px;
+    top: 414px; /* 더 촘촘하게 */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #D9D9D9;
+    border: none; /* 기본 실선 제거 */
+  }
+  
+  .add-button-text {
+    color: #000;
+    text-align: center;
+    font: 500 12px 'Beatrice Deck Trial', sans-serif;
+  }
+  
+  /* Animated interactions similar to auth buttons */
+  .add-to-cart-button,
+  .buy-now-button {
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    will-change: transform;
+  }
+  
+  .add-to-cart-button:hover,
+  .buy-now-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.12);
+  }
+  
+  .add-to-cart-button:active,
+  .buy-now-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  }
+  
+  .add-to-cart-button:hover { background-color: #d9d9d9; }
+  .buy-now-button:hover { background-color: #111; }
+  
+  .add-to-cart-button:focus-visible,
+  .buy-now-button:focus-visible {
+    outline: 2px solid #000;
+    outline-offset: 2px;
+  }
+  
+  /* Align price to the right inside a meta row on product detail page */
+  .product-info-panel .product-meta-row {
+    display: flex;
+  }
+  .product-info-panel .product-meta-row .product-price {
+    margin-left: auto;
+  }
+  /* ---- Stack layout overrides for consistent spacing inside info panel ---- */
+  .product-info-panel .info-content {
+    position: absolute;
+    left: 40px;
+    top: 40px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px; /* 모든 요소 간 간격 */
+    align-items: flex-start; /* 아이템들을 왼쪽에 붙임 */
+    text-align: left; /* 텍스트 왼쪽 정렬 보장 */
+  }
+  
+  .product-info-panel .info-content .product-title,
+  .product-info-panel .info-content .product-price,
+  .product-info-panel .info-content .price-disclaimer,
+  .product-info-panel .info-content .product-description,
+  .product-info-panel .info-content .option-label,
+  .product-info-panel .info-content .color-options,
+  .product-info-panel .info-content .size-options,
+  .product-info-panel .info-content .quantity-stepper,
+  .product-info-panel .info-content .size-guide-link,
+  .product-info-panel .info-content .add-to-cart-button {
+    position: static;
+    left: auto;
+    top: auto;
+  }
+  
+  .product-info-panel .info-content .color-options,
+  .product-info-panel .info-content .size-options {
+    display: flex;
+    gap: 6px;
+    width: auto;
+  }
+  
+  .product-info-panel .info-content .quantity-stepper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .product-info-panel .info-content .add-to-cart-button {
+    width: 100%;
+  }
+  
+  /* Responsive Styles */
+  @media (max-width: 991px) {
+    .product-detail-container {
+      flex-direction: column;
+      width: 100%;
+      max-width: 600px;
+      height: auto;
+      padding: 20px;
+    }
+  
+    .product-images-section {
+      width: 100%;
+      height: auto;
+      margin-bottom: 20px;
+    }
+  
+    .main-product-image {
+      width: 100%;
+      height: auto;
+      position: relative;
+      left: 0;
+      top: 0;
+    }
+  
+    .thumbnail-gallery {
+      position: relative;
+      left: 0;
+      top: 20px;
+      flex-direction: row;
+      gap: 8px;
+      overflow-x: auto;
+    }
+  
+    .thumbnail-image {
+      width: 60px;
+      height: 72px;
+      flex-shrink: 0;
+    }
+  
+    .product-info-panel {
+      width: 100%;
+      height: auto;
+      margin-left: 0;
+      padding-bottom: 20px;
+    }
+  
+    .close-button {
+      display: none;
+    }
+  
+    .product-title {
+      left: 20px;
+      top: 30px;
+    }
+  
+    .product-price {
+      left: 20px;
+      top: 55px;
+    }
+  
+    .price-disclaimer {
+      left: 20px;
+      top: 85px;
+    }
+  
+    .product-description {
+      left: 20px;
+      top: 120px;
+      width: calc(100% - 40px);
+    }
+  
+    .option-label {
+      left: 20px;
+    }
+  
+    .color-options {
+      left: 20px;
+      top: 200px;
+      width: calc(100% - 40px);
+    }
+  
+    .size-options {
+      left: 20px;
+      top: 260px;
+      width: calc(100% - 40px);
+    }
+  
+    .size-guide-link {
+      left: 20px;
+      top: 310px;
+      width: calc(100% - 40px);
+    }
+  
+    .add-to-cart-button {
+      left: 20px;
+      top: 335px;
+      width: calc(100% - 40px);
+    }
+  }
+  
+  @media (max-width: 640px) {
+    .product-detail-container {
+      padding: 16px;
+    }
+  
+    .thumbnail-image {
+      width: 50px;
+      height: 60px;
+    }
+  
+    .product-title {
+      font-size: 12px;
+    }
+  
+    .product-price {
+      font-size: 12px;
+    }
+  
+    .price-disclaimer {
+      font-size: 10px;
+    }
+  
+    .product-description {
+      font-size: 10px;
+    }
+  
+    .option-label {
+      font-size: 10px;
+    }
+  
+    .size-guide-link {
+      font-size: 9px;
+    }
+  }

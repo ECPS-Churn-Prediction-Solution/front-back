@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -158,5 +158,3 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
-
-

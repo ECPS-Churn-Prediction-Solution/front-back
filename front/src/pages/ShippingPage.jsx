@@ -55,5 +55,3 @@ const ShippingPage = () => {
 };
 
 export default ShippingPage;
-
-

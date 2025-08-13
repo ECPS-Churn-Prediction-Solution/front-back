@@ -382,6 +382,10 @@
   display: block;
 }
 
+/* Align price to right only on the products page */
+/* .products-main .product-meta-row { display: flex; }
+.products-main .product-meta-row .product-price { margin-left: auto; } */
+
 /* Ensure overlay button can be positioned relative to the image */
 .product-image-container {
   position: relative;
