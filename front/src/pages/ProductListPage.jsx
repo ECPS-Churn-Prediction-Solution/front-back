@@ -155,10 +155,10 @@ const ProductListPage = () => {
     <div className="App">
       <Header />
       <main className="products-main">
-        <div className="breadcrumb-section">
+        {/* <div className="breadcrumb-section">
           <span className="breadcrumb-home">Home</span>
           <span className="breadcrumb-current"> / Products</span>
-        </div>
+        </div> */}
         
         <h1 className="products-title">PRODUCTS</h1>
         

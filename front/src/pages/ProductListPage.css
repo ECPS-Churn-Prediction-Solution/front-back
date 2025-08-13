@@ -3,14 +3,14 @@
 .products-main {
   width: 1280px;
   margin: 0 auto;
-  /* padding-top: 150px; */
   position: relative;
+  padding: 30px 20px 0; /* cart-title처럼 처리 */
 }
 
 .breadcrumb-section {
-  position: absolute;
-  left: 356px;
-  top: 158px;
+  position: relative;
+  left: 0;
+  top: 0;
   width: 116px;
   height: 18px;
   font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
@@ -31,26 +31,23 @@
 }
 
 .products-title {
-  position: absolute;
-  left: 355px;
-  top: 185px;
-  width: 120px;
-  height: 30px;
+  grid-column: 1 / -1;
+  margin: 0 0 20px 0;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #C9C9C9;
   color: #000;
   font-family: 'Beatrice Deck Trial', -apple-system, Roboto, Helvetica, sans-serif;
   font-size: 20px;
   font-weight: 700;
-  line-height: normal;
   letter-spacing: 1px;
   text-transform: uppercase;
-  margin: 0;
 }
 
 .products-container {
   display: flex;
   width: 100%;
   position: relative;
-  top: 75px;
+  top: 0;
 }
 
 .filters-sidebar {
