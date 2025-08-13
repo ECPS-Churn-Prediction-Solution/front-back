@@ -61,6 +61,7 @@ const ProductSection = () => {
         items={products}
         renderItem={(product) => (
           <ProductCard
+            id={product.id}
             image={product.image}
             category={product.category}
             name={product.name}

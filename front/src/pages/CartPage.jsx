@@ -3,8 +3,12 @@ import { useLocation } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './CartPage.css';
+import { useNavigate } from 'react-router-dom';
+
 
 const CartPage = () => {
+  const navigate = useNavigate();
+
   const location = useLocation();
   const passedItem = location.state?.item;
   const [items, setItems] = useState(() => (
@@ -116,7 +120,13 @@ const CartPage = () => {
             <input type="checkbox" />
             <span>I agree to the Terms and Conditions</span>
           </label>
-          <button className="continue-btn">CONTINUE</button>
+            <button
+              type="button"
+              className="continue-btn"
+              onClick={() => navigate('/checkout')}
+            >
+              CONTINUE
+            </button>
         </aside>
       </main>
       <Footer />
