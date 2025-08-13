@@ -59,13 +59,10 @@
   margin-top: 0;
 }
 
-.products-grid {
+.product-grid.product-grid--section {
   position: absolute;
   top: 125px;
   left: 40px;
-  display: grid;
-  grid-template-columns: repeat(4, 304px);
-  gap: 31px;
   width: calc(4 * 304px + 3 * 31px);
 }
 

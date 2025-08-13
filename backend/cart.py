@@ -12,7 +12,7 @@ from crud import (
     remove_from_cart, clear_cart, get_variant_by_id
 )
 from users import get_current_user
-from decimal import Decimal
+
 import logging
 
 # 로깅 설정
@@ -44,7 +44,7 @@ async def get_cart(
         product = variant.product
         item_total = float(product.price * cart_item.quantity)
         total_amount += item_total
-        
+
         items.append(CartItemResponse(
             cart_item_id=cart_item.cart_item_id,
             variant_id=cart_item.variant_id,

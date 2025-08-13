@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import './Header.css';
 import AuthModal from './AuthModal';
 import { getMe as mockGetMe, logout as mockLogout } from '../lib/authMock';
+import { Link } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -45,7 +46,8 @@ const Header = () => {
       </div>
 
       <nav className={`main-navigation ${isMenuOpen ? 'mobile-menu-open' : ''}`}>
-        <a href="#" className="nav-link">Home</a>
+        <Link to="/" className="nav-link">Home</Link>
+        <Link to="/products" className="nav-link">Products</Link>
         <a href="#" className="nav-link">Collections</a>
         <a href="#" className="nav-link">New</a>
       </nav>
@@ -67,6 +69,17 @@ const Header = () => {
       </div>
 
       <div className="login-button">
+        <Link to="/cart" className="cart-link" aria-label="Cart">
+          {/* <img src="/imgs/cart1.png" alt="Cart" className="cart-icon" /> */}
+          <img  className="cart-icon" src="/imgs/cart1.png" alt="cart" />
+          <div className="cart-hero__overlay">cart</div>
+        </Link>
+        <Link to="/coupon" className="coupon-link" aria-label="Coupon">
+          <img src="/imgs/coupon.png" alt="Coupon" className="coupon-icon" />
+        </Link>
+        <Link to="/me" className="mypage-link" aria-label="My Page">
+          <img src="/imgs/mypage.png" alt="My Page" className="mypage-icon" />
+        </Link>
         {currentUser ? (
           <>
             <span className="welcome-text" aria-label="Welcome user">

@@ -16,6 +16,13 @@ class GenderEnum(enum.Enum):
     female = "female"
     other = "other"
 
+# 배송 상태 Enum 정의
+class DeliveryStatusEnum(enum.Enum):
+    """배송 상태를 나타내는 Enum"""
+    preparing = "상품 준비중"
+    shipping = "상품 배송중"
+    delivered = "상품 배송완료"
+
 class User(Base):
     """
     사용자 테이블
@@ -108,6 +115,7 @@ class ProductVariant(Base):
     order_items = relationship("OrderItem", back_populates="variant")
     cart_items = relationship("CartItem", back_populates="variant")
 
+
 class Order(Base):
     """
     주문 마스터 테이블
@@ -124,6 +132,11 @@ class Order(Base):
     shipping_memo = Column(Text(300), nullable=True, comment="배송 메모")
     used_coupon_code = Column(String(50), nullable=True, comment="사용한 쿠폰 코드")
     payment_method = Column(String(50), nullable=True, comment="결제 방법")
+    recipient_name = Column(String(100), nullable=True, comment="수령인 이름")
+    zip_code = Column(String(10), nullable=True, comment="우편번호")
+    address_main = Column(String(255), nullable=True, comment="기본 주소")
+    address_detail = Column(String(255), nullable=True, comment="상세 주소")
+    phone_number = Column(String(20), nullable=True, comment="연락처")
     
     # 관계 설정
     user = relationship("User", back_populates="orders")

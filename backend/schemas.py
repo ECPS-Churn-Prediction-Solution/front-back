@@ -180,7 +180,6 @@ class CartResponse(BaseModel):
             }
         }
 
-# === 주문 관련 스키마 ===
 
 class ShippingAddress(BaseModel):
     """
@@ -266,8 +265,10 @@ class ProductListResponse(BaseModel):
     created_at: datetime = Field(..., description="상품 등록일")
     available_variants: int = Field(..., description="사용 가능한 옵션 수")
 
+
     class Config:
         from_attributes = True
+
 
 class OrderResponse(BaseModel):
     """
@@ -353,6 +354,7 @@ class DirectOrderRequest(BaseModel):
             }
         }
 
+
 class OrderSuccessResponse(BaseModel):
     """
     주문 성공 응답 스키마
@@ -389,3 +391,4 @@ class ProductListPaginatedResponse(BaseModel):
 
     class Config:
         from_attributes = True
+

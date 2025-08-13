@@ -10,6 +10,9 @@ import uvicorn
 import logging
 from users import router as users_router
 from cart import router as cart_router
+
+from orders import router as orders_router
+
 from products import router as products_router
 
 # 로깅 설정
@@ -42,7 +45,9 @@ app.add_middleware(
 # API 라우터 등록
 app.include_router(users_router, prefix="/api/users", tags=["users"])
 app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
-app.include_router(products_router)
+app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
+app.include_router(products_router, prefix="/api/products")
+
 
 @app.get("/", tags=["root"])
 def read_root():
@@ -74,5 +79,5 @@ if __name__ == "__main__":
         host="127.0.0.1",
         port=8000,
         reload=False,  # 리로드 비활성화
-        log_level="info"
+        log_level="debug"  # 디버그 모드로 변경
     )

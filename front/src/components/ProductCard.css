@@ -23,7 +23,7 @@
 .add-to-cart-btn {
   position: absolute;
   bottom: 0px; /* 이미지 하단 중앙(6시 방향)으로 반쯤 걸치도록 */
-  left: 50%;
+  left: 45%;
   transform: translateX(-50%);
   width: 34px;
   height: 34px;
@@ -100,7 +100,7 @@
   font-size: 14px;
   font-weight: 500;
   line-height: normal;
-  margin-left: auto;
+  /* margin-left: auto; */
 }
 
 .color-swatch {

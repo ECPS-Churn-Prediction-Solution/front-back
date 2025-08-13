@@ -21,7 +21,7 @@ from schemas import (
     ProductVariantResponse
 )
 
-router = APIRouter(prefix="/api/products", tags=["상품"])
+router = APIRouter(tags=["products"])
 
 @router.get("/", response_model=ProductListPaginatedResponse)
 async def get_products(

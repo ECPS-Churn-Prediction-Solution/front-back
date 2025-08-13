@@ -1,5 +1,6 @@
 import React from 'react';
 import './ProductCard.css';
+import ProductMetaRow from './ProductMetaRow';
 
 const ProductCard = ({ 
   image, 
@@ -38,18 +39,13 @@ const ProductCard = ({
       </div>
       
       <div className="product-details">
-        <div className="product-meta-row">
-          <span className="product-category">{category}</span>
-          <span className="product-name">{name}</span>
-          {colorSwatch && (
-            <span 
-              className="color-swatch" 
-              style={{ backgroundColor: colorSwatch }}
-            />
-          )}
-          {colorCount && <span className="color-count">+{colorCount}</span>}
-          <span className="product-price">{price}</span>
-        </div>
+        <ProductMetaRow
+          category={category}
+          name={name}
+          price={price}
+          colorCount={colorCount}
+          colorSwatch={colorSwatch}
+        />
       </div>
     </div>
   );

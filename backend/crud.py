@@ -4,10 +4,11 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem
+from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum
 from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
 from auth import get_password_hash, verify_password
 from typing import Optional, List
+from decimal import Decimal
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """
@@ -314,7 +315,8 @@ def get_products_with_filters(
     Returns:
         tuple: (상품 목록, 전체 상품 수)
     """
-    # 기본 쿼리 생성 - 단순하게 Product만 조회
+
+    # 기본 쿼리 생성 - Product 조회
     query = db.query(Product)
     
     # 카테고리 필터
@@ -369,7 +371,7 @@ def get_product_variants(db: Session, product_id: int) -> List[ProductVariant]:
 
 def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateRequest) -> Order:
     """
-    장바구니 정보를 바탕으로 주문 생성 (ERD variant_id 기준)
+    장바구니 정보를 바탕으로 주문 생성
 
     Args:
         db: 데이터베이스 세션
@@ -401,7 +403,12 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
         shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
         shipping_memo=order_data.shopping_memo,
         payment_method=order_data.payment_method,
-        used_coupon_code=order_data.used_coupon_code
+        used_coupon_code=order_data.used_coupon_code,
+        recipient_name=order_data.recipient_name,
+        zip_code=order_data.shipping_address.zip_code,
+        address_main=order_data.shipping_address.address_main,
+        address_detail=order_data.shipping_address.address_detail,
+        phone_number=order_data.phone_number
     )
     db.add(new_order)
     db.flush()  # order_id를 얻기 위해 flush
@@ -455,7 +462,7 @@ def get_order_by_id(db: Session, user_id: int, order_id: int) -> Optional[Order]
 
 def create_direct_order(db: Session, user_id: int, order_data: DirectOrderRequest) -> Order:
     """
-    즉시 주문 생성 (장바구니를 거치지 않고 바로 주문, ERD variant_id 기준)
+    즉시 주문 생성 (장바구니를 거치지 않고 바로 주문)
 
     Args:
         db: 데이터베이스 세션
@@ -487,12 +494,17 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
         shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
         shipping_memo=order_data.shopping_memo,
         payment_method=order_data.payment_method,
-        used_coupon_code=order_data.used_coupon_code
+        used_coupon_code=order_data.used_coupon_code,
+        recipient_name=order_data.recipient_name,
+        zip_code=order_data.shipping_address.zip_code,
+        address_main=order_data.shipping_address.address_main,
+        address_detail=order_data.shipping_address.address_detail,
+        phone_number=order_data.phone_number
     )
     db.add(new_order)
     db.flush()  # order_id를 얻기 위해 flush
 
-    # 주문 상품 생성 (variant_id 기준)
+    # 주문 상품 생성
     order_item = OrderItem(
         order_id=new_order.order_id,
         variant_id=order_data.variant_id,
@@ -507,4 +519,6 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     db.commit()
     db.refresh(new_order)
     return new_order
+
+
 

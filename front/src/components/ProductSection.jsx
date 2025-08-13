@@ -1,5 +1,6 @@
 import React from 'react';
 import ProductCard from './ProductCard';
+import ProductGrid from './ProductGrid';
 import './ProductSection.css';
 
 const ProductSection = () => {
@@ -55,10 +56,11 @@ const ProductSection = () => {
         <span className="product-count">(50)</span>
       </div>
       
-      <div className="products-grid">
-        {products.map((product) => (
+      <ProductGrid
+        variant="section"
+        items={products}
+        renderItem={(product) => (
           <ProductCard
-            key={product.id}
             image={product.image}
             category={product.category}
             name={product.name}
@@ -67,8 +69,8 @@ const ProductSection = () => {
             colorSwatch={product.colorSwatch}
             altText={product.altText}
           />
-        ))}
-      </div>
+        )}
+      />
       
       <div className="navigation-controls">
         <button className="nav-btn nav-btn-prev" aria-label="Previous products">
