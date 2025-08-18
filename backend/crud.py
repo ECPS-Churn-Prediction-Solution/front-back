@@ -380,12 +380,22 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
     if not cart_items:
         raise ValueError("장바구니가 비어있습니다.")
 
+    # 주문 전, 장바구니의 모든 상품에 대한 재고를 미리 확인
+    for cart_item in cart_items:
+        variant = cart_item.variant
+        if variant.stock_quantity < cart_item.quantity:
+            raise ValueError(
+                f"'{variant.product.product_name} ({variant.color}/{variant.size})' 상품의 재고가 부족합니다. "
+                f"현재 재고: {variant.stock_quantity}개, 주문 수량: {cart_item.quantity}개"
+            )
+
     # 총 금액 계산 (variant.product.price 기준)
     total_amount = 0
     for cart_item in cart_items:
         total_amount += float(cart_item.variant.product.price * cart_item.quantity)
 
     # 주문 생성
+    # ... (Order 생성 로직은 동일)
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
@@ -411,6 +421,9 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
             quantity=cart_item.quantity,
             price_per_item=cart_item.variant.product.price
         )
+        # 재고 차감
+        cart_item.variant.stock_quantity -= cart_item.quantity
+
         db.add(order_item)
 
     # 장바구니 비우기
