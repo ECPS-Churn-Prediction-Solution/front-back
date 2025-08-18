@@ -8,8 +8,9 @@ from sqlalchemy.orm import Session
 from database import get_db
 from schemas import CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse, MessageResponse, UserResponse
 from crud import (
-    get_cart_items, add_to_cart, update_cart_item, 
-    remove_from_cart, clear_cart, get_variant_by_id
+    get_cart_items, add_to_cart, update_cart_item,
+    get_variant_by_id, clear_cart,
+    get_cart_item_for_user, remove_cart_item_by_id
 )
 from users import get_current_user
 
@@ -108,18 +109,18 @@ async def add_cart_item(
             detail=error_message
         )
 
-@router.put("/items/{variant_id}", response_model=MessageResponse)
+@router.put("/items/{cart_item_id}", response_model=MessageResponse)
 async def update_cart_quantity(
-    variant_id: int,
+    cart_item_id: int,
     cart_update: CartItemUpdate,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     장바구니 수량 변경
-    장바구니에 담긴 상품의 수량 업데이트
+    장바구니에 담긴 상품의 수량 업데이트 (cart_item_id 기준)
     """
-    logger.info(f"장바구니 수량 변경: 사용자 ID {current_user.user_id}, 상품 ID {variant_id}")
+    logger.info(f"장바구니 수량 변경: 사용자 ID {current_user.user_id}, 장바구니 항목 ID {cart_item_id}")
 
     # 수량 유효성 검사
     if cart_update.quantity <= 0:
@@ -129,46 +130,56 @@ async def update_cart_quantity(
         )
 
     # 장바구니 아이템 수량 변경
-    updated_item = update_cart_item(db, current_user.user_id, variant_id, cart_update.quantity)
+    updated_item = update_cart_item(db, current_user.user_id, cart_item_id, cart_update.quantity)
 
     if not updated_item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="❌ 장바구니에서 해당 상품을 찾을 수 없습니다."
+            detail="❌ 장바구니에서 해당 상품을 찾을 수 없거나 수정 권한이 없습니다."
         )
 
-    # 상품 정보 조회해서 상세 메시지 생성 (variant 기준)
-    variant = get_variant_by_id(db, variant_id)
-    new_total = float(variant.product.price * cart_update.quantity) if variant else 0
-    success_message = f"✅ 수량 변경 성공: {variant.product.product_name if variant else f'상품 옵션 ID {variant_id}'} ({variant.color}/{variant.size}) → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
+    # 상품 정보 조회해서 상세 메시지 생성
+    variant = updated_item.variant
+    new_total = float(variant.product.price * cart_update.quantity)
+    success_message = f"✅ 수량 변경 성공: {variant.product.product_name} ({variant.color}/{variant.size}) → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
     logger.info(success_message)
     return MessageResponse(message=success_message)
 
-@router.delete("/items/{variant_id}", response_model=MessageResponse)
+@router.delete("/items/{cart_item_id}", response_model=MessageResponse)
 async def remove_cart_item(
-    variant_id: int,
+    cart_item_id: int,
     current_user: UserResponse = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     장바구니 제거
-    장바구니에서 특정 상품을 제거
+    장바구니에서 특정 상품을 제거 (cart_item_id 기준)
     """
-    logger.info(f"장바구니 삭제: 사용자 ID {current_user.user_id}, 상품 ID {variant_id}")
+    logger.info(f"장바구니 삭제: 사용자 ID {current_user.user_id}, 장바구니 항목 ID {cart_item_id}")
 
-    # 삭제 전에 상품 정보 조회 (variant 기준)
-    variant = get_variant_by_id(db, variant_id)
-    product_name = f"{variant.product.product_name} ({variant.color}/{variant.size})" if variant else f"상품 옵션 ID {variant_id}"
+    # 삭제할 장바구니 항목이 현재 사용자의 소유인지 확인
+    cart_item_to_delete = get_cart_item_for_user(db, cart_item_id, current_user.user_id)
 
-    success = remove_from_cart(db, current_user.user_id, variant_id)
-
-    if not success:
+    if not cart_item_to_delete:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"❌ 장바구니에서 {product_name}을(를) 찾을 수 없습니다."
+            detail="장바구니에서 해당 상품을 찾을 수 없거나 삭제 권한이 없습니다."
         )
 
-    success_message = f"✅ 삭제 성공: {product_name}이(가) 장바구니에서 제거되었습니다."
+    # 성공 메시지를 위해 상품 정보 미리 가져오기
+    variant = cart_item_to_delete.variant
+    product_name = f"{variant.product.product_name} ({variant.color}/{variant.size})"
+
+    # DB에서 장바구니 항목 삭제
+    success = remove_cart_item_by_id(db, cart_item_id)
+
+    if not success:
+        # 이 경우는 DB에서 항목을 찾았으나 삭제에 실패한 드문 경우입니다.
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"'{product_name}' 상품을 삭제하는 중 서버 오류가 발생했습니다."
+        )
+
+    success_message = f"✅ 삭제 성공: '{product_name}' 상품이 장바구니에서 제거되었습니다."
     logger.info(success_message)
     return MessageResponse(message=success_message)
-

@@ -11,11 +11,11 @@ from dotenv import load_dotenv
 # 환경변수 로드
 load_dotenv()
 
-# 데이터베이스 URL 설정
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/shopping_mall")
+# 데이터베이스 URL 설정 (SQLite 강제 사용)
+DATABASE_URL = "sqlite:///./shopping_mall.db"
 
 # SQLAlchemy 엔진 생성
-engine = create_engine(DATABASE_URL)
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
 
 # 세션 로컬 클래스 생성
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
