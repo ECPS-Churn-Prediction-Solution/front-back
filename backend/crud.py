@@ -164,7 +164,7 @@ def get_variant_by_id(db: Session, variant_id: int) -> Optional[ProductVariant]:
     """
     return db.query(ProductVariant).filter(ProductVariant.variant_id == variant_id).first()
 
-# === 장바구니 관련 CRUD 함수 ===
+# === 장바구니 관련 CRUD 함수 === //////
 
 def get_cart_items(db: Session, user_id: int) -> List[CartItem]:
     """
@@ -215,14 +215,14 @@ def add_to_cart(db: Session, user_id: int, cart_item: CartItemAdd) -> CartItem:
         db.refresh(new_item)
         return new_item
 
-def update_cart_item(db: Session, user_id: int, variant_id: int, quantity: int) -> Optional[CartItem]:
+def update_cart_item(db: Session, user_id: int, cart_item_id: int, quantity: int) -> Optional[CartItem]:
     """
     장바구니 상품 수량 변경
 
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-        variant_id: 상품 옵션 ID
+        cart_item_id: 장바구니 아이템 ID
         quantity: 새로운 수량
 
     Returns:
@@ -230,7 +230,7 @@ def update_cart_item(db: Session, user_id: int, variant_id: int, quantity: int) 
     """
     cart_item = db.query(CartItem).filter(
         CartItem.user_id == user_id,
-        CartItem.variant_id == variant_id
+        CartItem.cart_item_id == cart_item_id
     ).first()
 
     if cart_item:
@@ -241,28 +241,42 @@ def update_cart_item(db: Session, user_id: int, variant_id: int, quantity: int) 
 
     return None
 
-def remove_from_cart(db: Session, user_id: int, variant_id: int) -> bool:
+def get_cart_item_for_user(db: Session, cart_item_id: int, user_id: int) -> Optional[CartItem]:
     """
-    장바구니에서 상품 삭제
+    특정 사용자의 특정 장바구니 아이템 조회 (삭제 전 권한 확인용)
 
     Args:
         db: 데이터베이스 세션
+        cart_item_id: 장바구니 아이템 ID
         user_id: 사용자 ID
-        variant_id: 상품 옵션 ID
+
+    Returns:
+        Optional[CartItem]: 장바구니 아이템 객체 (없거나 권한이 없으면 None)
+    """
+    return db.query(CartItem).filter(
+        CartItem.cart_item_id == cart_item_id,
+        CartItem.user_id == user_id,
+    ).first()
+
+def remove_cart_item_by_id(db: Session, cart_item_id: int) -> bool:
+    """
+    장바구니 아이템 ID로 상품 삭제
+
+    Args:
+        db: 데이터베이스 세션
+        cart_item_id: 장바구니 아이템 ID
 
     Returns:
         bool: 삭제 성공 여부
     """
-    cart_item = db.query(CartItem).filter(
-        CartItem.user_id == user_id,
-        CartItem.variant_id == variant_id
-    ).first()
+    # cart.py에서 get_cart_item_for_user를 통해 권한 확인이 선행됨
+    cart_item = db.query(CartItem).filter(CartItem.cart_item_id == cart_item_id).first()
 
     if cart_item:
         db.delete(cart_item)
         db.commit()
         return True
-
+    
     return False
 
 def clear_cart(db: Session, user_id: int) -> bool:
@@ -495,6 +509,3 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     db.commit()
     db.refresh(new_order)
     return new_order
-
-
-
