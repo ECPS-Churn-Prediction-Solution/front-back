@@ -8,11 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 import uvicorn
 import logging
-from users import router as users_router
-from cart import router as cart_router
-from orders import router as orders_router
-from products import router as products_router
-from categories import router as categories_router
+from api.users import router as users_router
+from api.cart import router as cart_router
+from api.orders import router as orders_router
+from api.products import router as products_router
+from api.categories import router as categories_router
 
 # 로깅 설정
 logger = logging.getLogger(__name__)

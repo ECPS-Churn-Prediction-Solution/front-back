@@ -4,9 +4,9 @@
 """
 
 from sqlalchemy.orm import Session
-from models import User, UserInterest, CartItem, Product, ProductVariant, Order, OrderItem, DeliveryStatusEnum, Category
-from schemas import UserRegisterRequest, CartItemAdd, OrderCreateRequest, DirectOrderRequest
-from auth import get_password_hash, verify_password
+from db.models import User, Product, Category, CartItem, Order, OrderItem, ProductVariant
+from db.schemas import UserRegisterRequest, OrderCreateRequest, CartItemAdd, DirectOrderRequest
+from api.auth import get_password_hash, verify_password
 from typing import Optional, List
 from decimal import Decimal
 

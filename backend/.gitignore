@@ -131,3 +131,6 @@ docs/_build/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# === 파일 관련 ===
+*.txt

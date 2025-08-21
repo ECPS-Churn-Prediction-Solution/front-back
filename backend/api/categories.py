@@ -7,9 +7,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from database import get_db
-from crud import get_all_categories
-from schemas import CategoryResponse
+from db.database import get_db
+from db.crud import get_all_categories
+from db.schemas import CategoryResponse
 
 router = APIRouter(tags=["categories"])
 

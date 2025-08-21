@@ -6,8 +6,8 @@ ERD에 정의된 모든 테이블을 데이터베이스에 생성
     python create_tables.py
 """
 
-from database import engine
-from models import Base
+from db.database import engine
+from db.models import Base
 import logging
 
 # 로깅 설정
