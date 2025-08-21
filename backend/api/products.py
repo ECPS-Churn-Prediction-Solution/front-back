@@ -7,13 +7,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 
-from database import get_db
-from crud import (
+from db.database import get_db
+from db.crud import (
     get_all_products,
     get_product_by_id_with_variants,
     get_product_variants
 )
-from schemas import (
+from db.schemas import (
     ProductListResponse,
     ProductDetailResponse,
     ProductVariantResponse

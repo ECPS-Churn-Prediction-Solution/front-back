@@ -5,16 +5,16 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from database import get_db
-from schemas import (
+from db.database import get_db
+from db.schemas import (
     OrderCreateRequest, OrderResponse, OrderListResponse,
     MessageResponse, UserResponse, OrderItemResponse, DirectOrderRequest,
     OrderSuccessResponse
 )
-from crud import (
+from db.crud import (
     create_order_from_cart, get_user_orders, get_order_by_id, create_direct_order
 )
-from users import get_current_user
+from api.users import get_current_user
 from decimal import Decimal
 import logging
 
