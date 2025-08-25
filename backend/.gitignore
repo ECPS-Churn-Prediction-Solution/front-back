@@ -1,0 +1,136 @@
+# === Python 관련 ===
+# 바이트 코드 파일
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 패키지 빌드
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# 단위 테스트 / 커버리지
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# === 가상환경 ===
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# === 환경변수 및 보안 (중요!) ===
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.pem
+*.key
+
+# === 데이터베이스 ===
+# SQLite 파일들 (테스트용)
+*.db
+*.sqlite
+*.sqlite3
+
+# PostgreSQL 덤프 파일
+*.sql
+
+# === IDE 및 에디터 ===
+# PyCharm
+.idea/
+
+# VSCode
+.vscode/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+
+# === OS 관련 ===
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Linux
+*~
+
+# === 로그 파일 ===
+*.log
+logs/
+
+# === 임시 파일 ===
+*.tmp
+*.temp
+.temp/
+
+# === 백업 파일 ===
+*.bak
+*.backup
+
+# === 프로덕션 관련 ===
+# 프로덕션 설정 파일
+config/production.py
+secrets/
+
+# === FastAPI 관련 ===
+# 업로드된 파일들
+uploads/
+media/
+
+# === 문서 ===
+# Sphinx documentation
+docs/_build/
+
+# === 기타 ===
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# === 파일 관련 ===
+*.txt

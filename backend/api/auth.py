@@ -1,0 +1,34 @@
+"""
+인증 및 보안 관련 유틸리티
+비밀번호 해싱 등
+"""
+
+from passlib.context import CryptContext
+
+# 비밀번호 해싱을 위한 설정
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    평문 비밀번호와 해시된 비밀번호를 비교하여 검증
+    
+    Args:
+        plain_password: 평문 비밀번호
+        hashed_password: 해시된 비밀번호
+    
+    Returns:
+        bool: 비밀번호 일치 여부
+    """
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password: str) -> str:
+    """
+    평문 비밀번호를 해시화
+    
+    Args:
+        password: 평문 비밀번호
+    
+    Returns:
+        str: 해시된 비밀번호
+    """
+    return pwd_context.hash(password)
