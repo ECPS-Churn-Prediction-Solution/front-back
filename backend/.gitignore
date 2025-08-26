@@ -133,4 +133,4 @@ docs/_build/
 dmypy.json
 
 # === 파일 관련 ===
-*.txt
+error.txt
