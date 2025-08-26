@@ -4,30 +4,29 @@ import os
 import json
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Request, Query, Path
+from datetime import datetime
 
 # --- Logger Setup ---
-# LogBack/Log4j와 유사한 파일 기반 로깅을 설정합니다.
 LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
-log_format = "% (asctime)s\t%(message)s"
-date_format = "%Y-%m-%dT%H:%M:%S%z"
+log_format = "%(message)s"
 
-# 이벤트 로거 설정
 event_logger = logging.getLogger("event_logger")
 event_logger.setLevel(logging.INFO)
 
-# 10MB 크기의 5개 파일을 순환 사용하는 핸들러
 handler = logging.handlers.RotatingFileHandler(
     os.path.join(LOG_DIR, "events.log"),
     maxBytes=10 * 1024 * 1024,
     backupCount=5,
     encoding="utf-8",
 )
-formatter = logging.Formatter(log_format, datefmt=date_format)
+formatter = logging.Formatter(log_format)
 handler.setFormatter(formatter)
-event_logger.addHandler(handler)
+
+if not event_logger.handlers:
+    event_logger.addHandler(handler)
 event_logger.propagate = False
 
 # --- Router ---
@@ -47,35 +46,29 @@ def get_product_info(product_id: int) -> Dict[str, Any]:
     }
 
 def log_event(log_type: str, request: Request, data: Dict[str, Any]):
-    """
-    탭으로 구분된 형식의 로그 메시지를 생성하고 기록합니다.
-    """
-    # 공통 필드
+    """JSON 형식의 로그 메시지를 생성하고 기록합니다."""
+    event_time = datetime.now().astimezone().isoformat()
+
     base_data = {
+        "event_time": event_time,
         "log_type": log_type,
         "method": request.method,
         "url": str(request.url),
         "user_id": data.get("user_id"),
         "client_ip": request.client.host if request.client else "N/A",
+        "referer": request.headers.get("referer"),
     }
-
-    # UTM 파라미터 추가
-    utm_params = {key: request.query_params.get(key) for key in ["utm_source", "utm_medium", "utm_campaign", "utm_content"]}
     
-    # 모든 데이터를 합칩니다.
+    utm_params = {f"utm_{key}": request.query_params.get(f"utm_{key}") for key in ["source", "medium", "campaign", "content"]}
+    
     full_log_data = {**base_data, **utm_params, **data}
     
-    # JSON 필드를 문자열로 변환
-    if "product_info" in full_log_data and full_log_data["product_info"]:
-        full_log_data["product_info"] = json.dumps(full_log_data["product_info"], ensure_ascii=False)
-    
-    # 탭으로 구분된 문자열 생성
-    log_message = "\t".join(str(v) for v in full_log_data.values())
+    # JSON 문자열로 변환하여 로깅
+    log_message = json.dumps(full_log_data, ensure_ascii=False)
     event_logger.info(log_message)
 
 
 # --- API Endpoints ---
-
 @router.get("/product/view/{product_id}")
 async def log_product_view(
     request: Request,
@@ -87,7 +80,7 @@ async def log_product_view(
 
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/product/view/123?user_id=user01&utm_source=google&utm_medium=cpc"
+    curl -X GET \"http://localhost:8000/log/product/view/123?user_id=user01&utm_source=google&utm_medium=cpc\"
     ```
     """
     log_data = {
@@ -134,11 +127,11 @@ async def log_order_prepare(
     price: float = Query(..., title="Total Price"),
 ):
     """
-    사용자의 주문이 발생했음을 기록합니다 (결제 전).
 
+    사용자의 주문이 발생했음을 기록합니다 (결제 전).
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/order/place/prepare?user_id=user01&cart_id=cart123&product_id=789&price=100000"
+    curl -X GET \"http://localhost:8000/log/order/place/prepare?user_id=user01&cart_id=cart123&product_id=789&price=100000\"
     ```
     """
     log_data = {
@@ -167,7 +160,7 @@ async def log_payment_status(
 
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/payment/status/1?user_id=user01&order_id=order555&payment_method=credit_card&price_total=125000&coupon_id=SUMMER2024"
+    curl -X GET \"http://localhost:8000/log/payment/status/1?user_id=user01&order_id=order555&payment_method=credit_card&price_total=125000&coupon_id=SUMMER2024\"
     ```
     """
     log_data = {
@@ -195,7 +188,7 @@ async def log_order_paid(
 
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/order/place/paid?user_id=user01&cart_id=cart123&product_id=789&payment_id=pay_abcde12345&price=125000"
+    curl -X GET \"http://localhost:8000/log/order/place/paid?user_id=user01&cart_id=cart123&product_id=789&payment_id=pay_abcde12345&price=125000\"
     ```
     """
     log_data = {
@@ -223,7 +216,7 @@ async def log_shipping_status(
 
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/shipping/status/-1?user_id=user01&order_id=order555&shipment_id=ship_xyz789"
+    curl -X GET \"http://localhost:8000/log/shipping/status/-1?user_id=user01&order_id=order555&shipment_id=ship_xyz789\"
     ```
     """
     log_data = {
