@@ -1,8 +1,10 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import './ProductCard.css';
 import ProductMetaRow from './ProductMetaRow';
 
 const ProductCard = ({ 
+  id,
   image, 
   category, 
   name, 
@@ -19,7 +21,7 @@ const ProductCard = ({
           alt={altText}
           className="product-image" 
         />
-        <div className="add-to-cart-btn">
+        <Link to={`/products/${id}`} className="add-to-cart-btn" aria-label={`View ${name}`}>
           <div className="add-btn-background"></div>
           <svg 
             className="add-icon" 
@@ -35,7 +37,7 @@ const ProductCard = ({
               strokeLinecap="round"
             />
           </svg>
-        </div>
+        </Link>
       </div>
       
       <div className="product-details">
