@@ -11,7 +11,7 @@ LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
-log_format = "%(asctime)s\t%(message)s"
+log_format = "% (asctime)s\t%(message)s"
 date_format = "%Y-%m-%dT%H:%M:%S%z"
 
 # 이벤트 로거 설정
@@ -66,7 +66,7 @@ def log_event(log_type: str, request: Request, data: Dict[str, Any]):
     full_log_data = {**base_data, **utm_params, **data}
     
     # JSON 필드를 문자열로 변환
-    if "product_info" in full_log_data:
+    if "product_info" in full_log_data and full_log_data["product_info"]:
         full_log_data["product_info"] = json.dumps(full_log_data["product_info"], ensure_ascii=False)
     
     # 탭으로 구분된 문자열 생성
@@ -103,7 +103,7 @@ async def log_cart_add(
     request: Request,
     user_id: Optional[str] = Query(None, title="User ID"),
     product_id: int = Query(..., title="Product ID"),
-    product_cnt: int = Query(1, title="Product Count"),
+    quantity: int = Query(1, title="Product Quantity"),
     options: Optional[str] = Query(None, title="JSON string for product options"),
 ):
     """
@@ -112,14 +112,14 @@ async def log_cart_add(
     **Example (curl):**
     ```bash
     # options의 JSON은 URL 인코딩 필요
-    curl -X GET 'http://localhost:8000/log/cart/add?user_id=user01&product_id=456&product_cnt=2&options=%7B%22color%22:%22red%22%7D'
+    curl -X GET 'http://localhost:8000/log/cart/add?user_id=user01&product_id=456&quantity=2&options=%7B%22color%22:%22red%22%7D'
     ```
     """
     log_data = {
         "user_id": user_id,
         "product_id": product_id,
         "product_info": get_product_info(product_id),
-        "quantity": product_cnt,
+        "quantity": quantity,
         "options": json.loads(options) if options else {},
     }
     log_event("cart_add", request, log_data)
@@ -185,7 +185,8 @@ async def log_payment_status(
 async def log_order_paid(
     request: Request,
     user_id: Optional[str] = Query(None, title="User ID"),
-    order_id: str = Query(..., title="Order ID"),
+    cart_id: Optional[str] = Query(None, title="Cart ID"),
+    product_id: int = Query(..., title="Product ID"),
     payment_id: str = Query(..., title="Payment ID"),
     price: float = Query(..., title="Total Price"),
 ):
@@ -194,12 +195,14 @@ async def log_order_paid(
 
     **Example (curl):**
     ```bash
-    curl -X GET "http://localhost:8000/log/order/place/paid?user_id=user01&order_id=order555&payment_id=pay_abcde12345&price=125000"
+    curl -X GET "http://localhost:8000/log/order/place/paid?user_id=user01&cart_id=cart123&product_id=789&payment_id=pay_abcde12345&price=125000"
     ```
     """
     log_data = {
         "user_id": user_id,
-        "order_id": order_id,
+        "cart_id": cart_id,
+        "product_id": product_id,
+        "product_info": get_product_info(product_id),
         "payment_id": payment_id,
         "is_paid": 1,
         "price": price,
