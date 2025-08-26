@@ -3,7 +3,7 @@
 ERD 기반으로 SQLAlchemy 모델 생성
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP
+from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP, Boolean, Numeric
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db.database import Base
@@ -47,6 +47,7 @@ class User(Base):
     orders = relationship("Order", back_populates="user")
     cart_items = relationship("CartItem", back_populates="user", cascade="all, delete-orphan")
     logins = relationship("UserLogin", back_populates="user")
+    events = relationship("Event", back_populates="user")
 
 class Category(Base):
     """
@@ -96,6 +97,7 @@ class Product(Base):
     # 관계 설정
     category = relationship("Category", back_populates="products")
     variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="product")
 
 class ProductVariant(Base):
     """
@@ -141,6 +143,7 @@ class Order(Base):
     # 관계 설정
     user = relationship("User", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
+    events = relationship("Event", back_populates="order")
 
 class OrderItem(Base):
     """
@@ -190,3 +193,48 @@ class UserLogin(Base):
 
     # 관계 설정
     user = relationship("User", back_populates="logins")
+
+class Event(Base):
+    """
+    사용자 행동 이벤트 로깅 테이블
+    """
+    __tablename__ = 'analytics_events'
+
+    event_time = Column(TIMESTAMP(timezone=True), nullable=False, comment="기준 시각")
+    event_date = Column(Date, nullable=False, comment="파티션 키")
+    event_id = Column(Text, primary_key=True, comment="이벤트 고유 식별자")
+    event_name = Column(Text, nullable=False, comment="이벤트 종류")
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True, comment="사용자 식별자")
+    anon_id = Column(Text, nullable=True, comment="비로그인 식별자")
+    session_id = Column(Text, nullable=True, comment="세션 ID")
+    request_id = Column(Text, nullable=True, comment="추적용")
+    product_id = Column(Integer, ForeignKey("products.product_id"), nullable=True, comment="상품 ID")
+    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=True, comment="주문 ID")
+    order_product_id = Column(Integer, nullable=True, comment="주문 상품 ID")
+    payment_id = Column(Integer, nullable=True, comment="결제 ID")
+    coupon_id = Column(Integer, nullable=True, comment="쿠폰 ID")
+    currency = Column(Text, default='KRW', comment="통화")
+    quantity = Column(Integer, nullable=True, comment="수량")
+    price_at_event = Column(Numeric(12, 2), nullable=True, comment="이벤트 시점 가격")
+    total_amount_at_event = Column(Numeric(12, 2), nullable=True, comment="이벤트 시점 총액")
+    product_name_at_event = Column(Text, nullable=True, comment="이벤트 시점 상품명")
+    product_category_at_event = Column(Text, nullable=True, comment="이벤트 시점 카테고리")
+    stock_at_event = Column(Integer, nullable=True, comment="이벤트 시점 재고")
+    coupon_code_at_event = Column(Text, nullable=True, comment="이벤트 시점 쿠폰 코드")
+    
+    page_url = Column(Text, nullable=True, comment="페이지 URL")
+    referrer = Column(Text, nullable=True, comment="리퍼러")
+    utm_source = Column(Text, nullable=True, comment="UTM 소스")
+    utm_medium = Column(Text, nullable=True, comment="UTM 매체")
+    utm_campaign = Column(Text, nullable=True, comment="UTM 캠페인")
+    utm_content = Column(Text, nullable=True, comment="UTM 콘텐츠")
+    ab_test_name = Column(Text, nullable=True, comment="A/B 테스트 이름")
+    ab_test_variant = Column(Text, nullable=True, comment="A/B 테스트 변형")
+    is_authenticated = Column(Boolean, nullable=True, comment="인증 여부")
+    server_time = Column(TIMESTAMP(timezone=True), nullable=True, comment="서버 처리 시각")
+    ingested_at = Column(TIMESTAMP(timezone=True), server_default=func.now(), comment="적재 시각")
+
+    # 관계 설정
+    user = relationship("User", back_populates="events")
+    product = relationship("Product", back_populates="events")
+    order = relationship("Order", back_populates="events")
