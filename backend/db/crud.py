@@ -4,7 +4,7 @@
 """
 
 from sqlalchemy.orm import Session
-from db.models import User, Product, Category, CartItem, Order, OrderItem, ProductVariant
+from db.models import User, Product, Category, CartItem, Order, OrderItem, ProductVariant, UserInterest
 from db.schemas import UserRegisterRequest, OrderCreateRequest, CartItemAdd, DirectOrderRequest
 from api.auth import get_password_hash, verify_password
 from typing import Optional, List

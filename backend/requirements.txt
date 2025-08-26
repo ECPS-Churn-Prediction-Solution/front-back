@@ -3,7 +3,7 @@ uvicorn[standard]
 sqlalchemy
 pydantic
 python-dotenv
-passlib[bcrypt]
 python-multipart
 itsdangerous
 email-validator
+Werkzeug

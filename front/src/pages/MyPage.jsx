@@ -1,15 +1,39 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { getMe as mockGetMe } from '../lib/authMock';
+// import { getMe as mockGetMe } from '../lib/authMock'; // Removed mock import
 import './CheckoutPage.css';
 import './MyPage.css';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Added API base URL
 
 const MyPage = () => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    setUser(mockGetMe());
+    const fetchMe = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // Add this line
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        } else {
+          // Not logged in or session expired
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+        setUser(null);
+      }
+    };
+    fetchMe();
   }, []);
 
   return (

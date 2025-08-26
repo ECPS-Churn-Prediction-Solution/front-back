@@ -17,6 +17,22 @@ logger = logging.getLogger(__name__)
 # 라우터 생성
 router = APIRouter()
 
+@router.options("/register")
+async def options_register():
+    return {"message": "OK"}
+
+@router.options("/login")
+async def options_login():
+    return {"message": "OK"}
+
+@router.options("/me")
+async def options_me():
+    return {"message": "OK"}
+
+@router.options("/logout")
+async def options_logout():
+    return {"message": "OK"}
+
 # 간단한 세션 저장소 (실제 프로덕션에서는 Redis 등을 사용)
 active_sessions = {}
 
@@ -97,17 +113,6 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
     """
     사용자 로그인
     이메일, 비밀번호 인증 후 사용자 정보 반환
-    
-    Args:
-        login_data: 로그인 요청 데이터
-        request: HTTP 요청 객체 (세션 접근용)
-        db: 데이터베이스 세션
-    
-    Returns:
-        LoginResponse: 로그인 성공 메시지와 사용자 정보
-    
-    Raises:
-        HTTPException: 인증 실패
     """
     logger.info(f"로그인 시도: {login_data.email}")
     print(f"🔍 로그인 시도: {login_data.email}")  # 디버그용
