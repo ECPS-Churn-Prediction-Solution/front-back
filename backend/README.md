@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ### 2. 데이터베이스 설정 (SQLite)
 ```bash
 # 테이블 생성
-python create_tables.py
+python -m db.create_tables  
 
 # 더미 데이터 입력
 python insert_dummy_data.py
