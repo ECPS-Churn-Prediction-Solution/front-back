@@ -117,7 +117,7 @@ class MessageResponse(BaseModel):
     성공/실패 메시지 반환
     """
     message: str = Field(..., description="응답 메시지")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -164,6 +164,9 @@ class CartItemResponse(BaseModel):
     variant_id: int = Field(..., description="상품 옵션 ID")
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
+    image_url: Optional[str] = Field(None, description="상품 이미지 URL")
+    color: Optional[str] = Field(None, description="색상")
+    size: Optional[str] = Field(None, description="사이즈")
     price: float = Field(..., description="상품 가격")
     quantity: int = Field(..., description="수량")
     total_price: float = Field(..., description="항목 총 가격")
@@ -280,6 +283,7 @@ class ProductListResponse(BaseModel):
     product_id: int = Field(..., description="상품 고유 ID")
     product_name: str = Field(..., description="상품명")
     description: Optional[str] = Field(None, description="상품 설명")
+    image_url: Optional[str] = Field(None, description="상품 이미지 URL")
     price: float = Field(..., description="상품 가격")
     category_name: str = Field(..., description="카테고리명")
     created_at: datetime = Field(..., description="상품 등록일")
@@ -396,6 +400,3 @@ class OrderSuccessResponse(BaseModel):
                 "message": "주문이 성공적으로 완료되었습니다."
             }
         }
-
-
-

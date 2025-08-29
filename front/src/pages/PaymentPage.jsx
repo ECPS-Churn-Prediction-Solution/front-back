@@ -1,24 +1,107 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './CheckoutPage.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const items = useMemo(() => (
-    location.state?.items || [
-      { id: 1, name: 'Basic Heavy T-Shirt', variant: 'Black/L', price: 99, qty: 1, image: 'https://picsum.photos/seed/ck1/200/240' },
-      { id: 2, name: 'Basic Fit T-Shirt', variant: 'Black/L', price: 99, qty: 1, image: 'https://picsum.photos/seed/ck2/200/240' },
-    ]
-  ), [location.state]);
-  const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const shipping = Number(location.state?.shipping ?? 5);
-  const shippingMethod = location.state?.shippingMethod ?? 'Standard (3-5 business days)';
-  const total = subtotal + shipping;
-  const contact = location.state?.contactInfo;
-  const addr = location.state?.shippingAddress;
+  const items = useMemo(() => location.state?.items || [], [location.state]);
+  const isBuyNow = useMemo(() => items.length > 0 && !!items[0].variantId, [items]);
+  const [paymentMethod, setPaymentMethod] = useState('credit');
+  const [cardInfo, setCardInfo] = useState({ number: '', name: '', expiry: '', cvc: '' });
+
+  const subtotal = useMemo(() => items.reduce((s, i) => s + i.price * i.qty, 0), [items]);
+  const shipping = useMemo(() => location.state?.shipping ?? 0, [location.state]);
+  const shippingMethod = useMemo(() => location.state?.shippingMethod ?? 'Standard (3-5 business days)', [location.state]);
+  const total = useMemo(() => subtotal + shipping, [subtotal, shipping]);
+
+  const contact = useMemo(() => location.state?.contactInfo, [location.state]);
+  const addr = useMemo(() => location.state?.shippingAddress, [location.state]);
+
+  const handleCardInfoChange = (e) => {
+    setCardInfo({ ...cardInfo, [e.target.name]: e.target.value });
+  };
+
+  const handlePlaceOrder = async () => {
+    if (isBuyNow && (!contact || !addr || !contact.email || !addr.address)) {
+      alert('배송 및 연락처 정보를 확인해주세요.');
+      navigate('/checkout');
+      return;
+    }
+
+    try {
+      let response;
+      if (isBuyNow) {
+        const orderItem = items[0];
+        const orderPayload = {
+          variant_id: orderItem.variantId,
+          quantity: orderItem.qty,
+          recipient_name: `${addr.firstName} ${addr.lastName}`,
+          shipping_address: {
+            zip_code: addr.postalCode,
+            address_main: addr.address,
+            address_detail: `${addr.city}, ${addr.stateRegion}`
+          },
+          phone_number: contact.phone,
+          payment_method: 'credit_card', // 'credit'와 'debit' 모두 'credit_card'로 처리
+          shopping_memo: location.state?.shippingMemo || "",
+        };
+
+        // 즉시 구매 API
+        response = await fetch(`${API_BASE_URL}/api/orders/direct`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload),
+          credentials: 'include',
+        });
+      } else {
+        const orderPayload = {
+          recipient_name: `${addr.firstName} ${addr.lastName}`,
+          shipping_address: {
+            zip_code: addr.postalCode,
+            address_main: addr.address,
+            address_detail: `${addr.city}, ${addr.stateRegion}`
+          },
+          phone_number: contact.phone,
+          payment_method: 'credit_card', // 'credit'와 'debit' 모두 'credit_card'로 처리
+          shopping_memo: location.state?.shippingMemo || "",
+        };
+
+        // 장바구니 주문 API
+        response = await fetch(`${API_BASE_URL}/api/orders/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderPayload),
+          credentials: 'include',
+        });
+      }
+
+      if (response.ok) {
+        const orderData = await response.json();
+        navigate('/order', {
+          state: {
+            orderId: orderData.order_id || `ORD-${Date.now().toString().slice(-6)}`,
+            items,
+            subtotal,
+            shipping,
+            shippingMethod,
+            total,
+          },
+        });
+      } else {
+        const errorData = await response.json();
+        alert('주문에 실패했습니다: ' + (errorData.detail || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('주문 처리 중 오류가 발생했습니다.');
+      console.error('Order placement error:', error);
+    }
+  };
+
   return (
     <div className="App">
       <Header />
@@ -28,23 +111,38 @@ const PaymentPage = () => {
           <section className="checkout-form">
             <nav className="checkout-steps">
               <Link className="step" to="/checkout">INFORMATION</Link>
-              {/* <Link className="step" to="/shipping">SHIPPING</Link> */}
               <span className="step active">PAYMENT</span>
             </nav>
 
             <div className="form-section">
               <div className="section-title">PAYMENT METHOD</div>
               <label className="summary-row" style={{border:'1px solid #D9D9D9', padding:'10px'}}>
-                <input type="radio" name="pay" defaultChecked />
-                <span>Credit / Debit Card</span>
+                <input
+                  type="radio"
+                  name="pay"
+                  value="credit"
+                  checked={paymentMethod === 'credit'}
+                  onChange={() => setPaymentMethod('credit')}
+                />
+                <span>Credit Card</span>
+              </label>
+              <label className="summary-row" style={{border:'1px solid #D9D9D9', padding:'10px', marginTop: '10px'}}>
+                <input
+                  type="radio"
+                  name="pay"
+                  value="debit"
+                  checked={paymentMethod === 'debit'}
+                  onChange={() => setPaymentMethod('debit')}
+                />
+                <span>Debit Card</span>
               </label>
               <div className="row">
-                <input className="input" placeholder="Card Number" />
-                <input className="input" placeholder="Name on Card" />
+                <input className="input" name="number" placeholder="Card Number" value={cardInfo.number} onChange={handleCardInfoChange} />
+                <input className="input" name="name" placeholder="Name on Card" value={cardInfo.name} onChange={handleCardInfoChange} />
               </div>
               <div className="row">
-                <input className="input" placeholder="MM/YY" />
-                <input className="input" placeholder="CVC" />
+                <input className="input" name="expiry" placeholder="MM/YY" value={cardInfo.expiry} onChange={handleCardInfoChange} />
+                <input className="input" name="cvc" placeholder="CVC" value={cardInfo.cvc} onChange={handleCardInfoChange} />
               </div>
             </div>
 
@@ -60,8 +158,8 @@ const PaymentPage = () => {
                 {addr && (
                   <div className="summary">
                     <div className="summary-row"><span>Name</span><span>{addr.firstName} {addr.lastName}</span></div>
-                    <div className="summary-row"><span>Address</span><span>{addr.address}, {addr.city}, {addr.stateRegion} {addr.postalCode}, {addr.country}</span></div>
-                    <div className="summary-row"><span>Shipping</span><span>{shippingMethod} · $ {shipping.toFixed(2)}</span></div>
+                    <div className="summary-row"><span>Address</span><span>{`${addr.address}, ${addr.city}, ${addr.stateRegion} ${addr.postalCode}, ${addr.country}`}</span></div>
+                    <div className="summary-row"><span>Shipping</span><span>{shippingMethod} · ₩ {shipping.toFixed(2)}</span></div>
                   </div>
                 )}
               </div>
@@ -69,18 +167,8 @@ const PaymentPage = () => {
 
             <button
               className="next-btn"
-              onClick={() =>
-                navigate('/order', {
-                  state: {
-                    orderId: `ORD-${Date.now().toString().slice(-6)}`,
-                    items,
-                    subtotal,
-                    shipping,
-                    shippingMethod,
-                    total,
-                  },
-                })
-              }
+              onClick={handlePlaceOrder}
+              disabled={!items || items.length === 0}
             >
               Pay
             </button>
@@ -92,10 +180,10 @@ const PaymentPage = () => {
               <Link to="/cart" className="panel-count">({items.length})</Link>
             </div>
             <div className="summary">
-              <div className="summary-row"><span>Subtotal</span><span>$ {subtotal.toFixed(2)}</span></div>
-              <div className="summary-row"><span>Shipping</span><span>$ {shipping.toFixed(2)}</span></div>
+              <div className="summary-row"><span>Subtotal</span><span>₩ {subtotal.toFixed(2)}</span></div>
+              <div className="summary-row"><span>Shipping</span><span>₩ {shipping.toFixed(2)}</span></div>
               <div className="summary-divider" />
-              <div className="summary-row total"><span>Total</span><span>$ {total.toFixed(2)}</span></div>
+              <div className="summary-row total"><span>Total</span><span>₩ {total.toFixed(2)}</span></div>
             </div>
           </aside>
         </div>
