@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import './Header.css';
 import AuthModal from './AuthModal';
-// import { getMe as mockGetMe, logout as mockLogout } from '../lib/authMock'; // Removed mock import
+import { getMe as mockGetMe, logout as mockLogout } from '../lib/authMock';
 import { Link } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Added API base URL
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -17,29 +15,9 @@ const Header = () => {
   };
 
   useEffect(() => {
-    const fetchMe = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Add this line
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setCurrentUser(data);
-        } else {
-          // Not logged in or session expired
-          setCurrentUser(null);
-        }
-      } catch (error) {
-        console.error('Failed to fetch current user:', error);
-        setCurrentUser(null);
-      }
-    };
-    fetchMe();
+    // 더미 현재 사용자 불러오기
+    const me = mockGetMe();
+    if (me) setCurrentUser(me);
   }, []);
 
   const openLogin = () => {
@@ -52,26 +30,9 @@ const Header = () => {
     setAuthOpen(true);
   };
 
-  const handleLogout = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/users/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        setCurrentUser(null);
-        alert('로그아웃 되었습니다.');
-      } else {
-        const errorData = await response.json();
-        alert(`로그아웃 실패: ${errorData.detail || '알 수 없는 오류'}`);
-      }
-    } catch (error) {
-      console.error('Failed to logout:', error);
-      alert('로그아웃 중 오류가 발생했습니다.');
-    }
+  const handleLogout = () => {
+    mockLogout();
+    setCurrentUser(null);
   };
 
   return (
@@ -89,6 +50,7 @@ const Header = () => {
         <Link to="/products" className="nav-link">Products</Link>
         <a href="#" className="nav-link">Collections</a>
         <a href="#" className="nav-link">New</a>
+        <Link to="/admin" className="nav-link">Admin</Link>
       </nav>
 
       <div className="logo-container">
