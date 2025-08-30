@@ -4,44 +4,41 @@ import Footer from '../components/Footer';
 // import { getMe as mockGetMe } from '../lib/authMock'; // Removed mock import
 import './CheckoutPage.css';
 import './MyPage.css';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Added API base URL
+import { useAuth } from '../lib/authContext.jsx';
+import { apiFetch } from '../lib/api.js';
 
 const MyPage = () => {
-  const [user, setUser] = useState(null);
+  const { user, loading } = useAuth();
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    const fetchMe = async () => {
+    const loadOrders = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include', // Add this line
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data);
+        const res = await apiFetch('/api/orders/', { silent401: true });
+        if (res && Array.isArray(res.orders)) {
+          setOrders(res.orders);
         } else {
-          // Not logged in or session expired
-          setUser(null);
+          setOrders([]);
         }
-      } catch (error) {
-        console.error('Failed to fetch current user:', error);
-        setUser(null);
+      } catch {
+        setOrders([]);
       }
     };
-    fetchMe();
-  }, []);
+    if (!loading && user) {
+      loadOrders();
+    } else if (!user) {
+      setOrders([]);
+    }
+  }, [loading, user]);
 
   return (
     <div className="App">
       <Header />
       <main className="checkout-main">
         <h1 className="mypage-title">My Page</h1>
-        {!user ? (
+        {loading ? (
+          <p>Loading...</p>
+        ) : !user ? (
           <p>로그인이 필요합니다.</p>
         ) : (
           <div className="mypage-card" style={{
@@ -75,17 +72,28 @@ const MyPage = () => {
             <h2 style={{ margin: '24px 0 12px' }}>Order History</h2>
             <div className="order-panel">
               <div className="order-list">
-                {[1,2].map((n) => (
-                  <div key={n} className="order-item">
-                    <img src={`https://picsum.photos/seed/m${n}/120/140`} alt={`Order ${n}`} className="order-thumb" />
-                    <div className="order-meta">
-                      <div className="order-name">Order #{1000+n}</div>
-                      <div className="order-variant">2024-01-0{n} · Paid</div>
-                    </div>
-                    <div className="order-qty">(2)</div>
-                    <div className="order-price">$ {(180 + n*5).toFixed(2)}</div>
-                  </div>
-                ))}
+                {orders.length === 0 ? (
+                  <div style={{ padding: 12, color: '#666' }}>주문 내역이 없습니다.</div>
+                ) : (
+                  orders.map((o) => {
+                    const itemsCount = Array.isArray(o.items) ? o.items.reduce((s, it) => s + (it.quantity || 0), 0) : 0;
+                    const firstName = o.items && o.items[0] ? o.items[0].product_name : 'Order';
+                    const dateStr = o.order_date ? new Date(o.order_date).toLocaleString() : '';
+                    const thumb = `https://picsum.photos/seed/ord${o.order_id}/120/140`;
+                    const amount = Number(o.total_amount || 0).toFixed(2);
+                    return (
+                      <div key={o.order_id} className="order-item">
+                        <img src={thumb} alt={`Order ${o.order_id}`} className="order-thumb" />
+                        <div className="order-meta">
+                          <div className="order-name">Order #{o.order_id} · {firstName}</div>
+                          <div className="order-variant">{dateStr} · {o.status}</div>
+                        </div>
+                        <div className="order-qty">({itemsCount})</div>
+                        <div className="order-price">₩ {amount}</div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </div>

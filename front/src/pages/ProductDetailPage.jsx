@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '../lib/api.js';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './ProductDetailPage.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// API 호출은 apiFetch를 통해 프록시 경유 및 쿠키 포함
 
 const ProductDetailPage = () => {
   const [product, setProduct] = useState(null);
@@ -17,13 +18,8 @@ const ProductDetailPage = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/products/${id}`);
-        if (response.ok) {
-          const data = await response.json();
-          setProduct(data);
-        } else {
-          console.error("Failed to fetch product");
-        }
+        const data = await apiFetch(`/api/products/${id}`);
+        setProduct(data);
       } catch (error) {
         console.error("Error fetching product:", error);
       }
@@ -90,28 +86,18 @@ const ProductDetailPage = () => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/items`, {
+      await apiFetch('/api/cart/items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          variant_id: variant.variant_id,
-          quantity: quantity,
-        }),
-        credentials: 'include',
+        body: { variant_id: variant.variant_id, quantity }
       });
-
-      if (response.ok) {
+      {
         if (window.confirm('장바구니에 추가되었습니다. 장바구니로 이동하시겠습니까?')) {
           navigate('/cart');
         }
-      } else if (response.status === 401) {
-        alert('로그인이 필요합니다.');
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '장바구니 추가에 실패했습니다.');
       }
     } catch (error) {
-      alert(error.message);
+      if (error.status === 401) alert('로그인이 필요합니다.');
+      else alert(error.message);
     }
   };
 

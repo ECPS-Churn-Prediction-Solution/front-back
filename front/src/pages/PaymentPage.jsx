@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './CheckoutPage.css';
+import { apiFetch } from '../lib/api.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// API 호출은 apiFetch 사용
 
 const PaymentPage = () => {
   const location = useLocation();
@@ -52,11 +53,9 @@ const PaymentPage = () => {
         };
 
         // 즉시 구매 API
-        response = await fetch(`${API_BASE_URL}/api/orders/direct`, {
+        response = await apiFetch('/api/orders/direct', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderPayload),
-          credentials: 'include',
+          body: orderPayload,
         });
       } else {
         const orderPayload = {
@@ -72,16 +71,14 @@ const PaymentPage = () => {
         };
 
         // 장바구니 주문 API
-        response = await fetch(`${API_BASE_URL}/api/orders/`, {
+        response = await apiFetch('/api/orders/', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(orderPayload),
-          credentials: 'include',
+          body: orderPayload,
         });
       }
 
-      if (response.ok) {
-        const orderData = await response.json();
+      if (response) {
+        const orderData = response;
         navigate('/order', {
           state: {
             orderId: orderData.order_id || `ORD-${Date.now().toString().slice(-6)}`,
@@ -92,9 +89,6 @@ const PaymentPage = () => {
             total,
           },
         });
-      } else {
-        const errorData = await response.json();
-        alert('주문에 실패했습니다: ' + (errorData.detail || 'Unknown error'));
       }
     } catch (error) {
       alert('주문 처리 중 오류가 발생했습니다.');

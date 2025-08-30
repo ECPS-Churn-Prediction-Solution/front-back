@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
 import './AuthModal.css';
-// import { login as mockLogin, register as mockRegister } from '../lib/authMock'; // Removed mock import
+import { useAuth } from '../lib/authContext.jsx';
 import { categories } from '../data/categories';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Added API base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const initialLogin = { email: '', password: '' };
 const initialRegister = {
@@ -21,6 +21,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
   const [loginForm, setLoginForm] = useState(initialLogin);
   const [registerForm, setRegisterForm] = useState(initialRegister);
   const [submitting, setSubmitting] = useState(false);
+  const { login, register } = useAuth();
   const [error, setError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
 
@@ -47,25 +48,11 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
     setSubmitting(true);
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ...registerForm, interest_categories: selectedCategories }),
-        credentials: 'include', // Add this line
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '회원가입 실패');
-      }
-
-      const data = await response.json();
+      await register({ ...registerForm, interest_categories: selectedCategories });
       // Assuming the backend returns { message: "..." }
       // After successful registration, switch to login tab
       setActiveTab('login');
-      alert(data.message); // Show success message
+      alert('회원가입이 성공적으로 완료되었습니다.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -106,22 +93,8 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
     setSubmitting(true);
     setError('');
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(loginForm),
-        credentials: 'include', // Add this line
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || '로그인 실패');
-      }
-
-      const data = await response.json();
-      onAuthed?.(data.user); // Assuming the backend returns { message: "...", user: { ... } }
+      const user = await login(loginForm.email, loginForm.password);
+      onAuthed?.(user);
       onClose?.();
       setLoginForm(initialLogin);
     } catch (err) {

@@ -1,24 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import './Header.css';
 import AuthModal from './AuthModal';
-import { getMe as mockGetMe, logout as mockLogout } from '../lib/authMock';
+import { useAuth } from '../lib/authContext.jsx';
 import { Link } from 'react-router-dom';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authTab, setAuthTab] = useState('login');
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, logout, refresh } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  useEffect(() => {
-    // 더미 현재 사용자 불러오기
-    const me = mockGetMe();
-    if (me) setCurrentUser(me);
-  }, []);
+  useEffect(() => { /* Provider가 초기 로드 */ }, []);
 
   const openLogin = () => {
     setAuthTab('login');
@@ -30,10 +26,7 @@ const Header = () => {
     setAuthOpen(true);
   };
 
-  const handleLogout = () => {
-    mockLogout();
-    setCurrentUser(null);
-  };
+  const handleLogout = async () => { await logout(); };
 
   return (
     <header className="header">
@@ -120,7 +113,7 @@ const Header = () => {
         isOpen={authOpen}
         onClose={() => setAuthOpen(false)}
         defaultTab={authTab}
-        onAuthed={(user) => setCurrentUser(user)}
+        onAuthed={() => refresh()}
       />
     </header>
   );

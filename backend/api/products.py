@@ -40,6 +40,7 @@ async def get_products(db: Session = Depends(get_db)):
                 product_id=product.product_id,
                 product_name=product.product_name,
                 description=product.description,
+                image_url=getattr(product, "image_url", None),
                 price=product.price,
                 category_name=product.category.category_name if product.category else "카테고리 없음",
                 created_at=product.created_at,
@@ -88,6 +89,8 @@ async def get_product_detail(
             product_id=product.product_id,
             product_name=product.product_name,
             description=product.description,
+            image_url=getattr(product, "image_url", None),
+            # 프론트는 상세에서도 image_url을 기대하므로 동적 필드 포함
             price=product.price,
             category_name=product.category.category_name if product.category else "카테고리 없음",
             created_at=product.created_at,

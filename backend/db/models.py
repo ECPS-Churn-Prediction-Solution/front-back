@@ -92,6 +92,7 @@ class Product(Base):
     product_name = Column(String(255), nullable=False, comment="상품명")
     description = Column(Text, nullable=True, comment="상품 설명")
     price = Column(Float, nullable=False, comment="상품 가격")
+    image_url = Column(String(500), nullable=True, comment="상품 이미지 URL")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="상품 등록일")
     
     # 관계 설정
@@ -129,6 +130,7 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="주문한 고객 ID")
     order_date = Column(TIMESTAMP, server_default=func.now(), comment="주문 일시")
     total_amount = Column(Float, nullable=False, comment="주문 총액")
+    shipping_fee = Column(Float, nullable=False, default=0.0, comment="배송비")
     status = Column(String(50), default="pending", comment="주문 상태")
     shipping_address = Column(String(255), nullable=True, comment="배송 주소")
     shipping_memo = Column(Text(300), nullable=True, comment="배송 메모")

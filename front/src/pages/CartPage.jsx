@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '../lib/api.js';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './CartPage.css';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// API 호출은 apiFetch 사용
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -26,27 +27,22 @@ const CartPage = () => {
 
   const fetchCartItems = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/`, {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        const formattedItems = data.items.map(item => ({
-          id: item.cart_item_id,
-          name: item.product_name,
-          category: 'Clothing',
-          price: item.price,
-          image: item.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734",
-          color: item.color,
-          size: item.size,
-          qty: item.quantity,
-        }));
-        setItems(formattedItems);
-      } else if (response.status === 401) {
+      const data = await apiFetch('/api/cart/', { silent401: true });
+      if (!data) {
         setItems([]);
-      } else {
-        console.error("Failed to fetch cart items");
+        return;
       }
+      const formattedItems = data.items.map(item => ({
+        id: item.cart_item_id,
+        name: item.product_name,
+        category: 'Clothing',
+        price: item.price,
+        image: item.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734",
+        color: item.color,
+        size: item.size,
+        qty: item.quantity,
+      }));
+      setItems(formattedItems);
     } catch (error) {
       console.error("Error fetching cart items:", error);
     }
@@ -60,17 +56,12 @@ const CartPage = () => {
     if (newQty < 1) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/items/${id}`, {
+      await apiFetch(`/api/cart/items/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ quantity: newQty }),
-        credentials: 'include',
+        body: { quantity: newQty }
       });
-
-      if (response.ok) {
+      {
         setItems(prev => prev.map(it => it.id === id ? { ...it, qty: newQty } : it));
-      } else {
-        alert('수량 변경에 실패했습니다.');
       }
     } catch (error) {
       alert('수량 변경 중 오류가 발생했습니다.');
@@ -79,15 +70,9 @@ const CartPage = () => {
 
   const removeItem = async (id) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/cart/items/${id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-
-      if (response.ok) {
+      await apiFetch(`/api/cart/items/${id}`, { method: 'DELETE' });
+      {
         setItems(prev => prev.filter(it => it.id !== id));
-      } else {
-        alert('상품 삭제에 실패했습니다.');
       }
     } catch (error) {
       alert('상품 삭제 중 오류가 발생했습니다.');

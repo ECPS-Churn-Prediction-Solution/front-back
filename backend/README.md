@@ -32,7 +32,7 @@ pip install -r requirements.txt
 python -m db.create_tables  
 
 # 더미 데이터 입력
-python insert_dummy_data.py
+python scripts/insert_dummy_data.py
 ```
 
 ### 3. 서버 실행

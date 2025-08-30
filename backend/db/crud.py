@@ -389,16 +389,22 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
                 f"현재 재고: {variant.stock_quantity}개, 주문 수량: {cart_item.quantity}개"
             )
 
-    # 총 금액 계산 (variant.product.price 기준)
-    total_amount = 0
+    # 총 금액 계산 (상품 총액 + 배송비)
+    items_total = 0.0
     for cart_item in cart_items:
-        total_amount += float(cart_item.variant.product.price * cart_item.quantity)
+        items_total += float(cart_item.variant.product.price * cart_item.quantity)
+    # 기본 배송비 정책: 장바구니에 상품이 있으면 3000원 부과
+    # 클라이언트가 전달한 배송비 우선, 없으면 기본 정책 적용
+    requested_fee = float(getattr(order_data, 'shipping_fee', 0) or 0)
+    shipping_fee = requested_fee if requested_fee > 0 else (3000.0 if cart_items else 0.0)
+    total_amount = items_total + shipping_fee
 
     # 주문 생성
     # ... (Order 생성 로직은 동일)
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
+        shipping_fee=shipping_fee,
         status="pending",
         shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
         shipping_memo=order_data.shopping_memo,
@@ -486,13 +492,17 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     if variant.stock_quantity < order_data.quantity:
         raise ValueError(f"재고가 부족합니다. 현재 재고: {variant.stock_quantity}개, 주문 수량: {order_data.quantity}개")
 
-    # 총 금액 계산 (상품의 기본 가격 사용)
-    total_amount = float(variant.product.price * order_data.quantity)
+    # 총 금액 계산 (상품 총액 + 배송비)
+    items_total = float(variant.product.price * order_data.quantity)
+    requested_fee = float(getattr(order_data, 'shipping_fee', 0) or 0)
+    shipping_fee = requested_fee if requested_fee > 0 else (3000.0 if order_data.quantity > 0 else 0.0)
+    total_amount = items_total + shipping_fee
 
     # 주문 생성
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
+        shipping_fee=shipping_fee,
         status="pending",
         shipping_address=f"{order_data.shipping_address.address_main}, {order_data.shipping_address.address_detail}",
         shipping_memo=order_data.shopping_memo,

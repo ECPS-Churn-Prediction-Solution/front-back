@@ -69,11 +69,15 @@ async def create_order(
         logger.info(success_message)
 
         # Swagger Response body에 표시될 응답
+        # 배송비는 총액과 상품합계 차액으로 계산 (정책상 3000원)
+        shipping_fee = int(getattr(new_order, 'shipping_fee', 0) or 0)
+
         return OrderSuccessResponse(
             order_id=new_order.order_id,
             order_date=new_order.order_date,
             status=order_status,  # 배송 상태
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             message="주문이 성공적으로 완료되었습니다."
         )
 
@@ -164,11 +168,15 @@ async def get_orders(
                 # 배송 상태 안전 처리
                 order_status = order.status.value if hasattr(order.status, 'value') else str(order.status)
 
+                # 배송비 계산: 총액 - 상품합계
+                shipping_fee = int(getattr(order, 'shipping_fee', 0) or 0)
+
                 order_responses.append(OrderResponse(
                     order_id=order.order_id,
                     user_id=order.user_id,
                     order_date=order.order_date,
                     total_amount=order_total,
+                    shipping_fee=shipping_fee,
                     status=order_status,
                     shopping_address=full_address,
                     items=order_items
@@ -273,11 +281,13 @@ async def get_order_detail(
         # 배송 상태 안전 처리
         order_status = order.status.value if hasattr(order.status, 'value') else str(order.status)
 
+        shipping_fee = int(getattr(order, 'shipping_fee', 0) or 0)
         return OrderResponse(
             order_id=order.order_id,
             user_id=order.user_id,
             order_date=order.order_date,
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             status=order_status,
             shopping_address=full_address,
             items=order_items
@@ -347,11 +357,13 @@ async def create_direct_order_api(
         logger.info(success_message)
 
         # Swagger Response body에 표시될 응답
+        shipping_fee = int(getattr(new_order, 'shipping_fee', 0) or 0)
         return OrderSuccessResponse(
             order_id=new_order.order_id,
             order_date=new_order.order_date,
             status=order_status,  # 배송 상태
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             message="주문이 성공적으로 완료되었습니다."
         )
 

@@ -4,6 +4,7 @@ ERD에 맞는 더미데이터 입력 스크립트
 
 import sqlite3
 import logging
+from pathlib import Path
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -11,7 +12,10 @@ logger = logging.getLogger(__name__)
 
 def insert_dummy_data():
     """더미 데이터를 SQLite에 입력"""
-    conn = sqlite3.connect('shopping_mall.db')
+    # backend/db/database.py와 동일한 위치의 DB 파일을 사용하도록 절대 경로 지정
+    base_dir = Path(__file__).resolve().parent.parent
+    db_path = base_dir / 'shopping_mall.db'
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     try:

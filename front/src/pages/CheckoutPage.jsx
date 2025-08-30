@@ -145,16 +145,23 @@ const CheckoutPage = () => {
 
             <div className="order-list">
               {items.map((it, idx) => {
-                const colorInEnglish = koreanToEnglishColorMap[it.color.toLowerCase()] || it.color;
+                const rawColor = (it?.color ?? '').toString();
+                const colorKey = rawColor ? rawColor.toLowerCase() : '';
+                const colorInEnglish = colorKey ? (koreanToEnglishColorMap[colorKey] || rawColor) : '-';
+                const size = it?.size ?? '-';
+                const image = it?.image || 'https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734';
+                const name = it?.name || 'Item';
+                const qty = Number(it?.qty ?? 1);
+                const price = Number(it?.price ?? 0);
                 return (
                   <div key={it.id ?? it.productId ?? idx} className="order-item">
-                    <img src={it.image} alt={it.name} className="order-thumb" />
+                    <img src={image} alt={name} className="order-thumb" />
                     <div className="order-meta">
-                      <div className="order-name">{it.name}</div>
-                      <div className="order-variant">{colorInEnglish} / {it.size}</div>
+                      <div className="order-name">{name}</div>
+                      <div className="order-variant">{colorInEnglish} / {size}</div>
                     </div>
-                    <div className="order-qty">({it.qty})</div>
-                    <div className="order-price">₩ {(it.price * it.qty).toFixed(2)}</div>
+                    <div className="order-qty">({qty})</div>
+                    <div className="order-price">₩ {(price * qty).toFixed(2)}</div>
                   </div>
                 )
               })}

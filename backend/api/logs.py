@@ -5,11 +5,13 @@ import json
 from typing import Optional, Dict, Any
 from fastapi import APIRouter, Request, Query, Path
 from datetime import datetime
+from pathlib import Path as FilePath
 
 # --- Logger Setup ---
-LOG_DIR = "logs"
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+# 절대 경로 기준으로 logs 디렉터리 생성 (작업 디렉터리 변화 영향 방지)
+BASE_DIR = FilePath(__file__).resolve().parent.parent  # backend/
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 log_format = "%(message)s"
 
@@ -17,7 +19,7 @@ event_logger = logging.getLogger("event_logger")
 event_logger.setLevel(logging.INFO)
 
 handler = logging.handlers.RotatingFileHandler(
-    os.path.join(LOG_DIR, "events.log"),
+    str(LOG_DIR / "events.log"),
     maxBytes=10 * 1024 * 1024,
     backupCount=5,
     encoding="utf-8",
