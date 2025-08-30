@@ -12,11 +12,13 @@ import ProductDetailPage from './pages/ProductDetailPage';
 import './App.css';
 import AdminDashboard from './pages/AdminDashboard';
 import { AuthProvider } from './lib/authContext.jsx';
+import RouteTracker from './lib/RouteTracker.jsx';
 
 function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <AuthProvider>
+        <RouteTracker />
         <Routes>
           <Route path="/" element={<MainPage />} />
           <Route path="/cart" element={<CartPage />} />

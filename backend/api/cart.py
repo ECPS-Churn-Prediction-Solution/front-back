@@ -27,7 +27,8 @@ router = APIRouter()
 @router.get("/", response_model=CartResponse)
 async def get_cart(
         current_user: UserResponse = Depends(get_current_user),
-        db: Session = Depends(get_db)
+        db: Session = Depends(get_db),
+        request: Request = None
 ):
     """
     장바구니 조회
@@ -62,6 +63,14 @@ async def get_cart(
 
     # 조회 결과 로그
     logger.info(f"✅ 장바구니 조회 완료: {len(items)}개 상품, 총 {total_amount:,}원")
+    try:
+        log_event("cart_view", request, {
+            "user_id": current_user.user_id,
+            "items_count": len(items),
+            "items_total": total_amount
+        })
+    except Exception:
+        pass
 
     return CartResponse(
         items=items,
@@ -100,7 +109,8 @@ async def add_cart_item(
 
     try:
         cart_result = add_to_cart(db, current_user.user_id, cart_item)
-        total_price = float(variant.product.price * cart_item.quantity)
+        price_at_event = float(variant.product.price)
+        total_price = float(price_at_event * cart_item.quantity)
         # 로깅 (cart_add)
         try:
             log_event(
@@ -171,6 +181,7 @@ async def update_cart_quantity(
                 "user_id": current_user.user_id,
                 "variant_id": variant.variant_id,
                 "quantity": cart_update.quantity,
+                "price_at_event": float(variant.product.price)
             }
         )
     except Exception:
@@ -224,6 +235,7 @@ async def remove_cart_item(
                 "user_id": current_user.user_id,
                 "variant_id": variant.variant_id,
                 "product_id": variant.product.product_id if variant and variant.product else None,
+                "price_at_event": float(variant.product.price)
             }
         )
     except Exception:

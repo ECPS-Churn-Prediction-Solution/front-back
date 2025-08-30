@@ -3,7 +3,7 @@
 상품 목록 조회, 상세 조회 기능 제공
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -18,11 +18,12 @@ from db.schemas import (
     ProductDetailResponse,
     ProductVariantResponse
 )
+from api.logs import log_event
 
 router = APIRouter(tags=["products"])
 
 @router.get("/", response_model=List[ProductListResponse])
-async def get_products(db: Session = Depends(get_db)):
+async def get_products(db: Session = Depends(get_db), request: Request = None):
     """
     전체 상품 목록 조회 (간단 버전)
     """
@@ -48,6 +49,15 @@ async def get_products(db: Session = Depends(get_db)):
             )
             product_responses.append(product_response)
         
+        # 로깅: 목록 조회(간략)
+        try:
+            log_event(
+                "product_list",
+                request,
+                {"count": len(product_responses)}
+            )
+        except Exception:
+            pass
         return product_responses
         
     except Exception as e:
@@ -57,7 +67,8 @@ async def get_products(db: Session = Depends(get_db)):
 @router.get("/{product_id}", response_model=ProductDetailResponse)
 async def get_product_detail(
     product_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     상품 상세 정보 조회
@@ -84,6 +95,20 @@ async def get_product_detail(
             )
             variant_responses.append(variant_response)
         
+        # 로깅: 상품 상세 조회
+        try:
+            log_event(
+                "product_view",
+                request,
+                {
+                    "product_id": product.product_id,
+                    "product_name": product.product_name,
+                    "category": product.category.category_name if product.category else None,
+                }
+            )
+        except Exception:
+            pass
+
         # 상품 상세 응답 데이터 구성
         return ProductDetailResponse(
             product_id=product.product_id,
