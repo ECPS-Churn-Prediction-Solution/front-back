@@ -3,13 +3,16 @@ import logging.handlers
 import os
 import json
 from typing import Optional, Dict, Any
+import uuid
 from fastapi import APIRouter, Request, Query, Path
 from datetime import datetime
+from pathlib import Path as FilePath
 
 # --- Logger Setup ---
-LOG_DIR = "logs"
-if not os.path.exists(LOG_DIR):
-    os.makedirs(LOG_DIR)
+# 절대 경로 기준으로 logs 디렉터리 생성 (작업 디렉터리 변화 영향 방지)
+BASE_DIR = FilePath(__file__).resolve().parent.parent  # backend/
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 log_format = "%(message)s"
 
@@ -17,7 +20,7 @@ event_logger = logging.getLogger("event_logger")
 event_logger.setLevel(logging.INFO)
 
 handler = logging.handlers.RotatingFileHandler(
-    os.path.join(LOG_DIR, "events.log"),
+    str(LOG_DIR / "events.log"),
     maxBytes=10 * 1024 * 1024,
     backupCount=5,
     encoding="utf-8",
@@ -48,20 +51,44 @@ def get_product_info(product_id: int) -> Dict[str, Any]:
 def log_event(log_type: str, request: Request, data: Dict[str, Any]):
     """JSON 형식의 로그 메시지를 생성하고 기록합니다."""
     event_time = datetime.now().astimezone().isoformat()
+    event_id = str(uuid.uuid4())
+    # session_id/anon_id는 프론트에서 쿠키/헤더로 전달 가능. 없으면 None
+    session_id = request.headers.get("X-Session-Id")
+    anon_id = request.headers.get("X-Anon-Id")
+    request_id = request.headers.get("X-Request-Id")
+    user_agent = request.headers.get("user-agent")
+    # 세션에서 user_id 자동 보강 (기능 API 내부 로깅 시 프론트 전달 없이도 식별)
+    user_id_from_data = data.get("user_id")
+    try:
+        user_id_from_session = getattr(request, "session", {}).get("user_id")
+    except Exception:
+        user_id_from_session = None
+    effective_user_id = user_id_from_data if user_id_from_data is not None else user_id_from_session
+    is_authenticated = bool(effective_user_id)
 
     base_data = {
         "event_time": event_time,
+        "event_id": event_id,
         "log_type": log_type,
         "method": request.method,
         "url": str(request.url),
-        "user_id": data.get("user_id"),
+        "user_id": effective_user_id,
+        "anon_id": anon_id,
+        "session_id": session_id,
+        "request_id": request_id,
         "client_ip": request.client.host if request.client else "N/A",
         "referer": request.headers.get("referer"),
+        "user_agent": user_agent,
+        "is_authenticated": is_authenticated,
     }
     
     utm_params = {f"utm_{key}": request.query_params.get(f"utm_{key}") for key in ["source", "medium", "campaign", "content"]}
+    # A/B 테스트 헤더 수집(있을 경우)
+    ab_test_name = request.headers.get("X-AB-Test-Name")
+    ab_test_variant = request.headers.get("X-AB-Variant")
     
-    full_log_data = {**base_data, **utm_params, **data}
+    ab_fields = {"ab_test_name": ab_test_name, "ab_test_variant": ab_test_variant}
+    full_log_data = {**base_data, **utm_params, **ab_fields, **data}
     
     # JSON 문자열로 변환하여 로깅
     log_message = json.dumps(full_log_data, ensure_ascii=False)
@@ -69,6 +96,20 @@ def log_event(log_type: str, request: Request, data: Dict[str, Any]):
 
 
 # --- API Endpoints ---
+@router.post("/track")
+async def track_event(request: Request):
+    """프론트에서 임의 UX 이벤트를 보낼 수 있는 범용 엔드포인트.
+    기대 바디: { "event_name": str, ...任意フィールド }
+    헤더로 X-Session-Id, X-Anon-Id, X-Request-Id 등을 전달하면 공통 필드로 병합됨.
+    """
+    try:
+        body = await request.json()
+        event_name = body.get("event_name") or body.get("log_type") or "custom_event"
+        log_event(event_name, request, body)
+        return {"status": "logged"}
+    except Exception as e:
+        # 로깅 실패도 서비스 흐름에 영향 주지 않음
+        return {"status": "error", "message": str(e)}
 @router.get("/product/view/{product_id}")
 async def log_product_view(
     request: Request,

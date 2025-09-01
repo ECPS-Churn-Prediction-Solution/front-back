@@ -3,7 +3,7 @@
 장바구니 조회, 추가, 수량변경, 삭제 기능 제공
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db.schemas import CartItemAdd, CartItemUpdate, CartItemResponse, CartResponse, MessageResponse, UserResponse
@@ -13,6 +13,7 @@ from db.crud import (
     get_cart_item_for_user, remove_cart_item_by_id
 )
 from api.users import get_current_user
+from api.logs import log_event
 
 import logging
 
@@ -25,8 +26,9 @@ router = APIRouter()
 
 @router.get("/", response_model=CartResponse)
 async def get_cart(
-    current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+        current_user: UserResponse = Depends(get_current_user),
+        db: Session = Depends(get_db),
+        request: Request = None
 ):
     """
     장바구니 조회
@@ -35,11 +37,11 @@ async def get_cart(
     logger.info(f"🛒 장바구니 조회: 사용자 ID {current_user.user_id}")
 
     cart_items = get_cart_items(db, current_user.user_id)
-    
+
     # 장바구니 아이템 응답 데이터 생성 (ERD variant_id 기준)
     items = []
     total_amount = 0.0
-    
+
     for cart_item in cart_items:
         variant = cart_item.variant
         product = variant.product
@@ -51,14 +53,24 @@ async def get_cart(
             variant_id=cart_item.variant_id,
             product_id=product.product_id,
             product_name=product.product_name,
+            color=variant.color,
+            size=variant.size,
             price=float(product.price),
             quantity=cart_item.quantity,
             total_price=item_total,
             added_at=cart_item.added_at
         ))
-    
+
     # 조회 결과 로그
     logger.info(f"✅ 장바구니 조회 완료: {len(items)}개 상품, 총 {total_amount:,}원")
+    try:
+        log_event("cart_view", request, {
+            "user_id": current_user.user_id,
+            "items_count": len(items),
+            "items_total": total_amount
+        })
+    except Exception:
+        pass
 
     return CartResponse(
         items=items,
@@ -68,9 +80,10 @@ async def get_cart(
 
 @router.post("/items", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
 async def add_cart_item(
-    cart_item: CartItemAdd,
-    current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+        cart_item: CartItemAdd,
+        current_user: UserResponse = Depends(get_current_user),
+        db: Session = Depends(get_db),
+        request: Request = None
 ):
     """
     장바구니에 상품 추가
@@ -78,7 +91,7 @@ async def add_cart_item(
     이미 있는 상품이면 수량 증가, 없으면 새로 추가
     """
     logger.info(f"장바구니 추가: 사용자 ID {current_user.user_id}, 상품 옵션 ID {cart_item.variant_id}")
-    
+
     # 상품 옵션 존재 확인 (ERD variant_id 기준)
     variant = get_variant_by_id(db, cart_item.variant_id)
     if not variant:
@@ -86,19 +99,34 @@ async def add_cart_item(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="존재하지 않는 상품 옵션입니다."
         )
-    
+
     # 수량 유효성 검사
     if cart_item.quantity <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="수량은 1개 이상이어야 합니다."
         )
-    
+
     try:
         cart_result = add_to_cart(db, current_user.user_id, cart_item)
-        total_price = float(variant.product.price * cart_item.quantity)
+        price_at_event = float(variant.product.price)
+        total_price = float(price_at_event * cart_item.quantity)
+        # 로깅 (cart_add)
+        try:
+            log_event(
+                "cart_add",
+                request,
+                {
+                    "user_id": current_user.user_id,
+                    "product_id": variant.product.product_id if variant and variant.product else None,
+                    "quantity": cart_item.quantity,
+                    "options": {"variant_id": cart_item.variant_id}
+                }
+            )
+        except Exception:
+            pass
         success_message = f"✅ 장바구니 추가 성공: {variant.product.product_name} ({variant.color}/{variant.size}) x {cart_item.quantity}개 (총 가격: {total_price:,}원)"
-        logger.info(success_message)
+        logger.info("장바구니 상품추가성공")
         return MessageResponse(message=success_message)
 
     except Exception as e:
@@ -111,10 +139,11 @@ async def add_cart_item(
 
 @router.put("/items/{cart_item_id}", response_model=MessageResponse)
 async def update_cart_quantity(
-    cart_item_id: int,
-    cart_update: CartItemUpdate,
-    current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+        cart_item_id: int,
+        cart_update: CartItemUpdate,
+        current_user: UserResponse = Depends(get_current_user),
+        db: Session = Depends(get_db),
+        request: Request = None
 ):
     """
     장바구니 수량 변경
@@ -143,13 +172,28 @@ async def update_cart_quantity(
     new_total = float(variant.product.price * cart_update.quantity)
     success_message = f"✅ 수량 변경 성공: {variant.product.product_name} ({variant.color}/{variant.size}) → {cart_update.quantity}개 (총 가격: {new_total:,}원)"
     logger.info(success_message)
+    # 로깅 (cart_update)
+    try:
+        log_event(
+            "cart_update",
+            request,
+            {
+                "user_id": current_user.user_id,
+                "variant_id": variant.variant_id,
+                "quantity": cart_update.quantity,
+                "price_at_event": float(variant.product.price)
+            }
+        )
+    except Exception:
+        pass
     return MessageResponse(message=success_message)
 
 @router.delete("/items/{cart_item_id}", response_model=MessageResponse)
 async def remove_cart_item(
-    cart_item_id: int,
-    current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+        cart_item_id: int,
+        current_user: UserResponse = Depends(get_current_user),
+        db: Session = Depends(get_db),
+        request: Request = None
 ):
     """
     장바구니 제거
@@ -181,5 +225,19 @@ async def remove_cart_item(
         )
 
     success_message = f"✅ 삭제 성공: '{product_name}' 상품이 장바구니에서 제거되었습니다."
-    logger.info(success_message)
+    logger.info("장바구니 해당 상품 삭제 성공")
+    # 로깅 (cart_remove)
+    try:
+        log_event(
+            "cart_remove",
+            request,
+            {
+                "user_id": current_user.user_id,
+                "variant_id": variant.variant_id,
+                "product_id": variant.product.product_id if variant and variant.product else None,
+                "price_at_event": float(variant.product.price)
+            }
+        )
+    except Exception:
+        pass
     return MessageResponse(message=success_message)

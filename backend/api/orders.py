@@ -3,7 +3,7 @@
 주문 생성, 조회, 상세 조회 기능 제공
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db.schemas import (
@@ -12,9 +12,11 @@ from db.schemas import (
     OrderSuccessResponse
 )
 from db.crud import (
-    create_order_from_cart, get_user_orders, get_order_by_id, create_direct_order
+    create_order_from_cart, get_user_orders, get_order_by_id, create_direct_order,
+    get_cart_items, get_variant_by_id
 )
 from api.users import get_current_user
+from api.logs import log_event
 from decimal import Decimal
 import logging
 
@@ -29,7 +31,8 @@ router = APIRouter()
 async def create_order(
     order_data: OrderCreateRequest,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     주문 생성
@@ -48,6 +51,35 @@ async def create_order(
 
         if not order_data.shipping_address or not order_data.shipping_address.address_main:
             raise ValueError("배송 주소는 필수입니다.")
+
+        # 로깅: 주문 준비(예상 금액/배송/아이템 요약 포함)
+        try:
+            cart_items = get_cart_items(db, current_user.user_id)
+            items_total = 0.0
+            items_summary = []
+            for ci in cart_items:
+                p = float(ci.variant.product.price)
+                q = int(ci.quantity)
+                items_total += p * q
+                items_summary.append({
+                    "variant_id": ci.variant_id,
+                    "product_id": ci.variant.product.product_id,
+                    "product_name": ci.variant.product.product_name,
+                    "qty": q,
+                    "price_at_event": p
+                })
+            fee = float(getattr(order_data, 'shipping_fee', 0) or (3000.0 if cart_items else 0.0))
+            log_event("order_prepare", request, {
+                "user_id": current_user.user_id,
+                "payment_method": str(getattr(order_data, 'payment_method', '')),
+                "used_coupon_code": getattr(order_data, 'used_coupon_code', ''),
+                "shipping_method": getattr(order_data, 'shipping_method', 'standard'),
+                "shipping_fee": fee,
+                "expected_price": items_total + fee,
+                "items_summary": items_summary
+            })
+        except Exception:
+            pass
 
         # 장바구니를 바탕으로 주문 생성
         new_order = create_order_from_cart(db, current_user.user_id, order_data)
@@ -68,12 +100,31 @@ async def create_order(
         success_message = f"✅ 주문 생성 성공! 주문번호: {new_order.order_id}, 총 금액: {total_amount_int:,}원"
         logger.info(success_message)
 
+        # 로깅: 결제 완료
+        try:
+            items_count = sum([int(i.quantity) if i.quantity else 0 for i in getattr(new_order, 'order_items', []) or []])
+            log_event("order_paid", request, {
+                "user_id": current_user.user_id,
+                "order_id": new_order.order_id,
+                "price": total_amount_int,
+                "shipping_fee": int(getattr(new_order, 'shipping_fee', 0) or 0),
+                "items_count": items_count,
+                "used_coupon_code": getattr(order_data, 'used_coupon_code', ''),
+                "payment_method": str(getattr(order_data, 'payment_method', '')),
+            })
+        except Exception:
+            pass
+
         # Swagger Response body에 표시될 응답
+        # 배송비는 총액과 상품합계 차액으로 계산 (정책상 3000원)
+        shipping_fee = int(getattr(new_order, 'shipping_fee', 0) or 0)
+
         return OrderSuccessResponse(
             order_id=new_order.order_id,
             order_date=new_order.order_date,
             status=order_status,  # 배송 상태
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             message="주문이 성공적으로 완료되었습니다."
         )
 
@@ -164,11 +215,15 @@ async def get_orders(
                 # 배송 상태 안전 처리
                 order_status = order.status.value if hasattr(order.status, 'value') else str(order.status)
 
+                # 배송비 계산: 총액 - 상품합계
+                shipping_fee = int(getattr(order, 'shipping_fee', 0) or 0)
+
                 order_responses.append(OrderResponse(
                     order_id=order.order_id,
                     user_id=order.user_id,
                     order_date=order.order_date,
                     total_amount=order_total,
+                    shipping_fee=shipping_fee,
                     status=order_status,
                     shopping_address=full_address,
                     items=order_items
@@ -273,11 +328,13 @@ async def get_order_detail(
         # 배송 상태 안전 처리
         order_status = order.status.value if hasattr(order.status, 'value') else str(order.status)
 
+        shipping_fee = int(getattr(order, 'shipping_fee', 0) or 0)
         return OrderResponse(
             order_id=order.order_id,
             user_id=order.user_id,
             order_date=order.order_date,
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             status=order_status,
             shopping_address=full_address,
             items=order_items
@@ -298,7 +355,8 @@ async def get_order_detail(
 async def create_direct_order_api(
     order_data: DirectOrderRequest,
     current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     """
     즉시 주문 생성
@@ -327,6 +385,29 @@ async def create_direct_order_api(
         # 터미널용 로그
         logger.info(f"🚀 즉시 주문 시도: 사용자 ID {current_user.user_id}, 상품 옵션 ID {order_data.variant_id}, 수량 {order_data.quantity}")
 
+        # 로깅: 주문 준비(즉시주문) - 예상 금액/배송/아이템 요약 포함
+        try:
+            v = get_variant_by_id(db, order_data.variant_id)
+            price = float(v.product.price) * int(order_data.quantity)
+            fee = float(getattr(order_data, 'shipping_fee', 0) or (3000.0 if order_data.quantity > 0 else 0.0))
+            log_event("order_prepare", request, {
+                "user_id": current_user.user_id,
+                "payment_method": str(getattr(order_data, 'payment_method', '')),
+                "used_coupon_code": getattr(order_data, 'used_coupon_code', ''),
+                "shipping_method": getattr(order_data, 'shipping_method', 'standard'),
+                "shipping_fee": fee,
+                "expected_price": price + fee,
+                "items_summary": [{
+                    "variant_id": v.variant_id,
+                    "product_id": v.product.product_id,
+                    "product_name": v.product.product_name,
+                    "qty": int(order_data.quantity),
+                    "price_at_event": float(v.product.price)
+                }]
+            })
+        except Exception:
+            pass
+
         # 즉시 주문 생성
         new_order = create_direct_order(db, current_user.user_id, order_data)
 
@@ -346,12 +427,29 @@ async def create_direct_order_api(
         success_message = f"✅ 즉시 주문 성공! 주문번호: {new_order.order_id}, 상품 수량: {order_data.quantity}개, 총 금액: {total_amount_int:,}원"
         logger.info(success_message)
 
+        # 로깅: 결제 완료
+        try:
+            items_count = sum([int(i.quantity) if i.quantity else 0 for i in getattr(new_order, 'order_items', []) or []])
+            log_event("order_paid", request, {
+                "user_id": current_user.user_id,
+                "order_id": new_order.order_id,
+                "price": total_amount_int,
+                "shipping_fee": int(getattr(new_order, 'shipping_fee', 0) or 0),
+                "items_count": items_count,
+                "used_coupon_code": getattr(order_data, 'used_coupon_code', ''),
+                "payment_method": str(getattr(order_data, 'payment_method', '')),
+            })
+        except Exception:
+            pass
+
         # Swagger Response body에 표시될 응답
+        shipping_fee = int(getattr(new_order, 'shipping_fee', 0) or 0)
         return OrderSuccessResponse(
             order_id=new_order.order_id,
             order_date=new_order.order_date,
             status=order_status,  # 배송 상태
             total_amount=total_amount_int,
+            shipping_fee=shipping_fee,
             message="주문이 성공적으로 완료되었습니다."
         )
 

@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './Modal';
 import './AuthModal.css';
-import { login as mockLogin, register as mockRegister } from '../lib/authMock';
+import { useAuth } from '../lib/authContext.jsx';
 import { categories } from '../data/categories';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 const initialLogin = { email: '', password: '' };
 const initialRegister = {
@@ -19,6 +21,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
   const [loginForm, setLoginForm] = useState(initialLogin);
   const [registerForm, setRegisterForm] = useState(initialRegister);
   const [submitting, setSubmitting] = useState(false);
+  const { login, register } = useAuth();
   const [error, setError] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
 
@@ -45,10 +48,11 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
     setSubmitting(true);
     setError('');
     try {
-      // 더미 등록 (관심사 포함)
-      mockRegister({ ...registerForm, interest_categories: selectedCategories });
-      // 자동 로그인은 하지 않고, 탭을 로그인으로 전환
+      await register({ ...registerForm, interest_categories: selectedCategories });
+      // Assuming the backend returns { message: "..." }
+      // After successful registration, switch to login tab
       setActiveTab('login');
+      alert('회원가입이 성공적으로 완료되었습니다.');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -89,7 +93,7 @@ const AuthModal = ({ isOpen, onClose, defaultTab = 'login', onAuthed }) => {
     setSubmitting(true);
     setError('');
     try {
-      const user = mockLogin(loginForm);
+      const user = await login(loginForm.email, loginForm.password);
       onAuthed?.(user);
       onClose?.();
       setLoginForm(initialLogin);

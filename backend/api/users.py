@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from db.database import get_db
 from db.schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
 from db.crud import get_user_by_email, create_user, authenticate_user, get_user_by_id
+from api.logs import log_event
 import logging
 
 # 로깅 설정
@@ -16,6 +17,22 @@ logger = logging.getLogger(__name__)
 
 # 라우터 생성
 router = APIRouter()
+
+@router.options("/register")
+async def options_register():
+    return {"message": "OK"}
+
+@router.options("/login")
+async def options_login():
+    return {"message": "OK"}
+
+@router.options("/me")
+async def options_me():
+    return {"message": "OK"}
+
+@router.options("/logout")
+async def options_logout():
+    return {"message": "OK"}
 
 # 간단한 세션 저장소 (실제 프로덕션에서는 Redis 등을 사용)
 active_sessions = {}
@@ -52,7 +69,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserRes
     )
 
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
-async def register_user(user_data: UserRegisterRequest, db: Session = Depends(get_db)):
+async def register_user(user_data: UserRegisterRequest, db: Session = Depends(get_db), request: Request = None):
     """
     사용자 회원가입
     신규 고객 정보와 관심사를 DB에 저장
@@ -81,6 +98,11 @@ async def register_user(user_data: UserRegisterRequest, db: Session = Depends(ge
     try:
         # 사용자 생성
         new_user = create_user(db, user_data)
+        # 로깅: 회원가입 성공
+        try:
+            log_event("auth_register", request, {"user_id": new_user.user_id, "email": new_user.email})
+        except Exception:
+            pass
         logger.info(f"회원가입 성공: {new_user.email} (ID: {new_user.user_id})")
         
         return MessageResponse(message="회원가입이 성공적으로 완료되었습니다.")
@@ -97,17 +119,6 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
     """
     사용자 로그인
     이메일, 비밀번호 인증 후 사용자 정보 반환
-    
-    Args:
-        login_data: 로그인 요청 데이터
-        request: HTTP 요청 객체 (세션 접근용)
-        db: 데이터베이스 세션
-    
-    Returns:
-        LoginResponse: 로그인 성공 메시지와 사용자 정보
-    
-    Raises:
-        HTTPException: 인증 실패
     """
     logger.info(f"로그인 시도: {login_data.email}")
     print(f"🔍 로그인 시도: {login_data.email}")  # 디버그용
@@ -116,6 +127,11 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
     user = authenticate_user(db, login_data.email, login_data.password)
     if not user:
         logger.warning(f"로그인 실패: {login_data.email}")
+        # 로깅: 로그인 실패
+        try:
+            log_event("auth_login_fail", request, {"email": login_data.email})
+        except Exception:
+            pass
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="이메일 또는 비밀번호가 올바르지 않습니다.",
@@ -137,6 +153,11 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
     )
     
     logger.info(f"로그인 성공: {user.email} (ID: {user.user_id})")
+    # 로깅: 로그인 성공
+    try:
+        log_event("auth_login", request, {"user_id": user.user_id, "email": user.email})
+    except Exception:
+        pass
     
     return LoginResponse(
         message="로그인 성공",
@@ -174,8 +195,14 @@ async def logout_user(request: Request):
     """
     # 세션에서 사용자 ID 제거
     if "user_id" in request.session:
+        user_id = request.session.get("user_id")
         del request.session["user_id"]
         logger.info("로그아웃 성공")
+        # 로깅: 로그아웃
+        try:
+            log_event("auth_logout", request, {"user_id": user_id})
+        except Exception:
+            pass
         return MessageResponse(message="로그아웃이 완료되었습니다.")
     else:
         return MessageResponse(message="이미 로그아웃된 상태입니다.")

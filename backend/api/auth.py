@@ -3,10 +3,7 @@
 비밀번호 해싱 등
 """
 
-from passlib.context import CryptContext
-
-# 비밀번호 해싱을 위한 설정
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+from werkzeug.security import generate_password_hash, check_password_hash
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -19,7 +16,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     Returns:
         bool: 비밀번호 일치 여부
     """
-    return pwd_context.verify(plain_password, hashed_password)
+    return check_password_hash(hashed_password, plain_password)
 
 def get_password_hash(password: str) -> str:
     """
@@ -31,4 +28,4 @@ def get_password_hash(password: str) -> str:
     Returns:
         str: 해시된 비밀번호
     """
-    return pwd_context.hash(password)
+    return generate_password_hash(password)

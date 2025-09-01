@@ -36,7 +36,12 @@ app.add_middleware(
 # CORS 미들웨어 설정 (프론트엔드 연결용)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # 프론트엔드 도메인
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],  # 프론트엔드 도메인
     allow_credentials=True,
     allow_methods=["*"],  # 모든 HTTP 메서드 허용
     allow_headers=["*"],  # 모든 헤더 허용
@@ -78,8 +83,8 @@ def health_check():
 if __name__ == "__main__":
     uvicorn.run(
         "main:app",
-        host="127.0.0.1",
+        host="localhost",
         port=8000,
         reload=False,  # 리로드 비활성화
-        log_level="debug"  # 디버그 모드로 변경
+        log_level="info"  # 디버그 모드로 변경
     )

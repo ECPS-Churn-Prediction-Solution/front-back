@@ -10,16 +10,21 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
 
   const passed = location.state;
-  const items = useMemo(() => (
-    passed?.items || [
-      { id: 1, name: 'Basic Heavy T-Shirt', variant: 'Black/L', price: 99, qty: 1, image: 'https://picsum.photos/seed/ck1/200/240' },
-      { id: 2, name: 'Basic Fit T-Shirt', variant: 'Black/L', price: 99, qty: 1, image: 'https://picsum.photos/seed/ck2/200/240' },
-    ]
-  ), [passed]);
+  const items = useMemo(() => passed?.items || [], [passed]);
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const [shippingMethod, setShippingMethod] = useState('Standard (3-5 business days)');
-  const [shippingFee, setShippingFee] = useState(5);
+  const [shippingFee, setShippingFee] = useState(items.length > 0 ? 3000 : 0);
+
+  const total = subtotal + shippingFee;
+
+  const koreanToEnglishColorMap = useMemo(() => ({
+    '그레이': 'gray',
+    '블랙': 'black',
+    '민트': 'mint',
+    '화이트': 'white',
+    '블루': 'blue',
+  }), []);
 
   // Contact & address state
   const [email, setEmail] = useState('');
@@ -31,6 +36,11 @@ const CheckoutPage = () => {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [postalCode, setPostalCode] = useState('');
+
+  const handleShippingChange = (method, fee) => {
+    setShippingMethod(method);
+    setShippingFee(fee);
+  };
 
   return (
     <div className="App">
@@ -89,19 +99,21 @@ const CheckoutPage = () => {
                   type="radio"
                   name="method"
                   defaultChecked
-                  onChange={() => { setShippingMethod('Standard (3-5 business days)'); setShippingFee(5); }}
+                  disabled={items.length === 0}
+                  onChange={() => handleShippingChange('Standard (3-5 business days)', items.length > 0 ? 3000 : 0)}
                 />
                 <span>Standard (3-5 business days)</span>
-                <span style={{marginLeft:'auto'}}>$ 5.00</span>
+                <span style={{marginLeft:'auto'}}>₩ {items.length > 0 ? '3000.00' : '0.00'}</span>
               </label>
               <label className="summary-row" style={{border:'1px solid #D9D9D9', padding:'10px'}}>
                 <input
                   type="radio"
                   name="method"
-                  onChange={() => { setShippingMethod('Express (1-2 business days)'); setShippingFee(12); }}
+                  disabled={items.length === 0}
+                  onChange={() => handleShippingChange('Express (1-2 business days)', items.length > 0 ? 5000 : 0)}
                 />
                 <span>Express (1-2 business days)</span>
-                <span style={{marginLeft:'auto'}}>$ 12.00</span>
+                <span style={{marginLeft:'auto'}}>₩ {items.length > 0 ? '5000.00' : '0.00'}</span>
               </label>
             </div>
 
@@ -113,6 +125,8 @@ const CheckoutPage = () => {
               onClick={() => navigate('/payment', { state: {
                 items,
                 shipping: shippingFee,
+                subtotal: subtotal,
+                total: total,
                 shippingMethod,
                 contactInfo: { email, phone },
                 shippingAddress: { firstName, lastName, country, stateRegion, address, city, postalCode },
@@ -130,24 +144,34 @@ const CheckoutPage = () => {
             </div>
 
             <div className="order-list">
-              {items.map((it, idx) => (
-                <div key={it.id ?? it.productId ?? idx} className="order-item">
-                  <img src={it.image} alt={it.name} className="order-thumb" />
-                  <div className="order-meta">
-                    <div className="order-name">{it.name}</div>
-                    <div className="order-variant">{it.variant}</div>
+              {items.map((it, idx) => {
+                const rawColor = (it?.color ?? '').toString();
+                const colorKey = rawColor ? rawColor.toLowerCase() : '';
+                const colorInEnglish = colorKey ? (koreanToEnglishColorMap[colorKey] || rawColor) : '-';
+                const size = it?.size ?? '-';
+                const image = it?.image || 'https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734';
+                const name = it?.name || 'Item';
+                const qty = Number(it?.qty ?? 1);
+                const price = Number(it?.price ?? 0);
+                return (
+                  <div key={it.id ?? it.productId ?? idx} className="order-item">
+                    <img src={image} alt={name} className="order-thumb" />
+                    <div className="order-meta">
+                      <div className="order-name">{name}</div>
+                      <div className="order-variant">{colorInEnglish} / {size}</div>
+                    </div>
+                    <div className="order-qty">({qty})</div>
+                    <div className="order-price">₩ {(price * qty).toFixed(2)}</div>
                   </div>
-                  <div className="order-qty">({it.qty})</div>
-                  <div className="order-price">$ {it.price}</div>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
             <div className="summary">
-              <div className="summary-row"><span>Subtotal</span><span>$ {subtotal.toFixed(2)}</span></div>
-              <div className="summary-row"><span>Shipping</span><span className="muted">Calculated at next step</span></div>
+              <div className="summary-row"><span>Subtotal</span><span>₩ {subtotal.toFixed(2)}</span></div>
+              <div className="summary-row"><span>Shipping</span><span>₩ {shippingFee.toFixed(2)}</span></div>
               <div className="summary-divider" />
-              <div className="summary-row total"><span>Total</span><span>$ {subtotal.toFixed(2)}</span></div>
+              <div className="summary-row total"><span>Total</span><span>₩ {total.toFixed(2)}</span></div>
             </div>
           </aside>
         </div>

@@ -117,7 +117,7 @@ class MessageResponse(BaseModel):
     성공/실패 메시지 반환
     """
     message: str = Field(..., description="응답 메시지")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -164,6 +164,9 @@ class CartItemResponse(BaseModel):
     variant_id: int = Field(..., description="상품 옵션 ID")
     product_id: int = Field(..., description="상품 ID")
     product_name: str = Field(..., description="상품명")
+    image_url: Optional[str] = Field(None, description="상품 이미지 URL")
+    color: Optional[str] = Field(None, description="색상")
+    size: Optional[str] = Field(None, description="사이즈")
     price: float = Field(..., description="상품 가격")
     quantity: int = Field(..., description="수량")
     total_price: float = Field(..., description="항목 총 가격")
@@ -229,6 +232,8 @@ class OrderCreateRequest(BaseModel):
     shopping_memo: str = Field(default="", description="배송 메모")
     payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
     used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
+    shipping_method: str = Field(default="standard", description="배송 방법 (standard | express)")
+    shipping_fee: float = Field(default=3000.0, description="배송비")
 
     class Config:
         json_schema_extra = {
@@ -280,6 +285,7 @@ class ProductListResponse(BaseModel):
     product_id: int = Field(..., description="상품 고유 ID")
     product_name: str = Field(..., description="상품명")
     description: Optional[str] = Field(None, description="상품 설명")
+    image_url: Optional[str] = Field(None, description="상품 이미지 URL")
     price: float = Field(..., description="상품 가격")
     category_name: str = Field(..., description="카테고리명")
     created_at: datetime = Field(..., description="상품 등록일")
@@ -298,6 +304,7 @@ class OrderResponse(BaseModel):
     user_id: int = Field(..., description="주문한 사용자 ID")
     order_date: datetime = Field(..., description="주문 일시")
     total_amount: float = Field(..., description="주문 총액")
+    shipping_fee: float = Field(..., description="배송비")
     status: str = Field(..., description="주문 상태")
     shopping_address: str = Field(..., description="배송 주소")
     items: List[OrderItemResponse] = Field(default=[], description="주문 상품 목록")
@@ -309,6 +316,7 @@ class ProductDetailResponse(BaseModel):
     product_id: int = Field(..., description="상품 고유 ID")
     product_name: str = Field(..., description="상품명")
     description: Optional[str] = Field(None, description="상품 설명")
+    image_url: Optional[str] = Field(None, description="상품 이미지 URL")
     price: float = Field(..., description="상품 가격")
     category_name: str = Field(..., description="카테고리명")
     created_at: datetime = Field(..., description="상품 등록일")
@@ -355,6 +363,8 @@ class DirectOrderRequest(BaseModel):
     shopping_memo: str = Field(default="", description="배송 메모")
     payment_method: PaymentMethod = Field(..., description="결제 방법 (credit_card 또는 cash)")
     used_coupon_code: str = Field(default="", description="사용한 쿠폰 코드")
+    shipping_method: str = Field(default="standard", description="배송 방법 (standard | express)")
+    shipping_fee: float = Field(default=3000.0, description="배송비")
 
     class Config:
         json_schema_extra = {
@@ -384,6 +394,7 @@ class OrderSuccessResponse(BaseModel):
     order_date: datetime = Field(..., description="주문 일시")
     status: str = Field(..., description="주문 상태")
     total_amount: float = Field(..., description="주문 총액")
+    shipping_fee: float = Field(..., description="배송비")
     message: str = Field(..., description="주문 성공 메시지")
 
     class Config:
@@ -396,6 +407,3 @@ class OrderSuccessResponse(BaseModel):
                 "message": "주문이 성공적으로 완료되었습니다."
             }
         }
-
-
-
