@@ -82,6 +82,11 @@ def add_user_interests(db: Session, user_id: int, category_ids: List[int]) -> No
         category_ids: 관심 카테고리 ID 리스트
     """
     for category_id in category_ids:
+        # 카테고리 존재 여부 검증 (외래키 오류 방지)
+        category_exists = db.query(Category.category_id).filter(Category.category_id == category_id).first()
+        if not category_exists:
+            # 존재하지 않는 카테고리는 건너뜀
+            continue
         # 이미 존재하는 관심사인지 확인
         existing_interest = db.query(UserInterest).filter(
             UserInterest.user_id == user_id,

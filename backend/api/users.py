@@ -101,6 +101,19 @@ async def register_user(user_data: UserRegisterRequest, db: Session = Depends(ge
         # 로깅: 회원가입 성공
         try:
             log_event("auth_register", request, {"user_id": new_user.user_id, "email": new_user.email})
+            # 프로필 스냅샷 이벤트 추가 (이후 피처 엔지니어링용)
+            try:
+                profile_payload = {
+                    "user_id": new_user.user_id,
+                    "gender": str(getattr(new_user, "gender", "") or ""),
+                    "birthdate": str(getattr(new_user, "birthdate", "") or ""),
+                    "created_at": str(getattr(new_user, "created_at", "") or ""),
+                    "interest_categories": list(getattr(user_data, "interest_categories", []) or []),
+                    "num_interests": len(getattr(user_data, "interest_categories", []) or []),
+                }
+                log_event("user_profile", request, profile_payload)
+            except Exception:
+                pass
         except Exception:
             pass
         logger.info(f"회원가입 성공: {new_user.email} (ID: {new_user.user_id})")
