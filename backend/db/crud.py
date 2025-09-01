@@ -4,11 +4,15 @@
 """
 
 from sqlalchemy.orm import Session
-from db.models import User, Product, Category, CartItem, Order, OrderItem, ProductVariant, UserInterest
+from db.models import (
+    User, Product, Category, CartItem, Order, OrderItem, ProductVariant, UserInterest,
+    DailyChurnKpi, ChurnSegmentAggr, ChurnRiskDistribution, HighRiskUser, ActionRecommendation
+)
 from db.schemas import UserRegisterRequest, OrderCreateRequest, CartItemAdd, DirectOrderRequest
 from api.auth import get_password_hash, verify_password
 from typing import Optional, List
 from decimal import Decimal
+from datetime import date
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """
@@ -532,3 +536,128 @@ def create_direct_order(db: Session, user_id: int, order_data: DirectOrderReques
     db.commit()
     db.refresh(new_order)
     return new_order
+
+# === 대시보드 관련 CRUD 함수 ===
+
+def get_overall_churn_rate(db: Session, report_dt: date, horizon_days: int):
+    """
+    전체 Churn Rate 지표를 데이터베이스에서 조회
+    """
+    kpi_data = db.query(DailyChurnKpi).filter(
+        DailyChurnKpi.report_dt == report_dt,
+        DailyChurnKpi.horizon_days == horizon_days
+    ).first()
+
+    if not kpi_data:
+        return None
+
+    retention_rate = 1 - kpi_data.churn_rate
+    return {
+        "reportDt": kpi_data.report_dt,
+        "horizonDays": kpi_data.horizon_days,
+        "customersTotal": kpi_data.customers_total,
+        "churnRate": kpi_data.churn_rate,
+        "retentionRate": retention_rate,
+        "churnCustomers": kpi_data.churn_customers
+    }
+
+def get_rfm_churn_rate(db: Session, report_dt: date, horizon_days: int):
+    """
+    RFM 그룹별 Churn Rate 지표를 데이터베이스에서 조회
+    """
+    segments_data = db.query(ChurnSegmentAggr).filter(
+        ChurnSegmentAggr.report_dt == report_dt,
+        ChurnSegmentAggr.horizon_days == horizon_days,
+        ChurnSegmentAggr.segment_type == 'rfm_bucket'
+    ).all()
+
+    if not segments_data:
+        return None
+
+    segments = [
+        {
+            "bucket": s.segment_key,
+            "customers": s.customers,
+            "churnRate": s.churn_rate,
+            "atRiskUsers": round(s.customers * s.churn_rate)
+        } for s in segments_data
+    ]
+
+    return {
+        "reportDt": report_dt,
+        "horizonDays": horizon_days,
+        "segments": segments
+    }
+
+def get_churn_risk_distribution(db: Session, report_dt: date, horizon_days: int):
+    """
+    위험 밴드별 고객 분포 지표를 데이터베이스에서 조회
+    """
+    distribution_data = db.query(ChurnRiskDistribution).filter(
+        ChurnRiskDistribution.report_dt == report_dt,
+        ChurnRiskDistribution.horizon_days == horizon_days
+    ).all()
+
+    if not distribution_data:
+        return None
+
+    bands = [
+        {"riskBand": d.risk_band, "userCount": d.user_count, "ratio": d.ratio}
+        for d in distribution_data
+    ]
+
+    at_risk_bands = [d for d in distribution_data if d.risk_band in ('VH', 'H')]
+    at_risk_user_count = sum(d.user_count for d in at_risk_bands)
+    at_risk_ratio = sum(d.ratio for d in at_risk_bands)
+
+    return {
+        "reportDt": report_dt,
+        "horizonDays": horizon_days,
+        "bands": bands,
+        "atRisk": {
+            "userCount": at_risk_user_count,
+            "ratio": at_risk_ratio
+        }
+    }
+
+def get_high_risk_users(db: Session, report_dt: date, horizon_days: int, page: int = 1, per_page: int = 10):
+    """
+    고위험 사용자 리스트를 데이터베이스에서 조회 (페이징 지원)
+    """
+    offset = (page - 1) * per_page
+    
+    # Query for the total count first
+    total_count_query = db.query(HighRiskUser).filter(
+        HighRiskUser.report_dt == report_dt,
+        HighRiskUser.horizon_days == horizon_days
+    )
+    total_count = total_count_query.count()
+
+    # Query for the paginated items with join
+    users_query = total_count_query.join(
+        ActionRecommendation,
+        HighRiskUser.policy_id == ActionRecommendation.policy_id
+    ).order_by(
+        HighRiskUser.churn_probability.desc()
+    ).offset(offset).limit(per_page)
+
+    results = users_query.all()
+
+    items = [
+        {
+            "userId": r.user_id,
+            "riskBand": r.risk_band,
+            "churnProbability": r.churn_probability,
+            "action": {
+                "policyId": r.policy_id,
+                "policy_name": r.action_recommendation.policy_name
+            }
+        } for r in results
+    ]
+
+    return {
+        "reportDt": report_dt,
+        "horizonDays": horizon_days,
+        "total": total_count,
+        "items": items
+    }

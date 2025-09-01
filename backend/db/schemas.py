@@ -407,3 +407,141 @@ class OrderSuccessResponse(BaseModel):
                 "message": "주문이 성공적으로 완료되었습니다."
             }
         }
+
+# === 대시보드 관련 스키마 ===
+
+class ChurnRateOverallResponse(BaseModel):
+    """
+    전체 Churn Rate 지표 응답 스키마
+    """
+    reportDt: date
+    horizonDays: int
+    customersTotal: int
+    churnRate: float
+    retentionRate: float
+    churnCustomers: int
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "reportDt": "2025-08-29",
+                "horizonDays": 30,
+                "customersTotal": 120345,
+                "churnRate": 0.1325,
+                "retentionRate": 0.8675,
+                "churnCustomers": 15966
+            }
+        }
+
+class ChurnRateRFMSegment(BaseModel):
+    """
+    RFM 그룹별 Churn Rate 세그먼트
+    """
+    bucket: str
+    customers: int
+    churnRate: float
+    atRiskUsers: int
+
+class ChurnRateRFMResponse(BaseModel):
+    """
+    RFM 그룹별 Churn Rate 지표 응답 스키마
+    """
+    reportDt: date
+    horizonDays: int
+    segments: List[ChurnRateRFMSegment]
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "reportDt": "2025-08-29",
+                "horizonDays": 30,
+                "segments": [
+                    {"bucket": "High(10-12)", "customers": 12000, "churnRate": 0.1825, "atRiskUsers": 2190},
+                    {"bucket": "Mid(7-9)", "customers": 34000, "churnRate": 0.1120, "atRiskUsers": 3808},
+                    {"bucket": "Low(3-6)", "customers": 56000, "churnRate": 0.0835, "atRiskUsers": 4676}
+                ]
+            }
+        }
+
+class ChurnRiskBand(BaseModel):
+    """
+    위험 밴드별 고객 분포
+    """
+    riskBand: str
+    userCount: int
+    ratio: float
+
+class ChurnRiskAtRisk(BaseModel):
+    """
+    이탈 위험 고객 요약
+    """
+    userCount: int
+    ratio: float
+
+class ChurnRiskDistributionResponse(BaseModel):
+    """
+    위험 밴드별 고객 수 및 비중 응답 스키마
+    """
+    reportDt: date
+    horizonDays: int
+    bands: List[ChurnRiskBand]
+    atRisk: ChurnRiskAtRisk
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "reportDt": "2025-08-29",
+                "horizonDays": 30,
+                "bands": [
+                    {"riskBand": "VH", "userCount": 8200, "ratio": 0.0681},
+                    {"riskBand": "H", "userCount": 10250, "ratio": 0.0851}
+                ],
+                "atRisk": {"userCount": 18450, "ratio": 0.1532}
+            }
+        }
+
+class HighRiskUserAction(BaseModel):
+    """
+    고위험 고객에 대한 추천 액션
+    """
+    policyId: int
+    policy_name: str
+
+class HighRiskUser(BaseModel):
+    """
+    고위험 고객 상세 정보
+    """
+    userId: int
+    riskBand: str
+    churnProbability: float
+    action: HighRiskUserAction
+
+class HighRiskUserListResponse(BaseModel):
+    """
+    고위험 고객 리스트 응답 스키마
+    """
+    reportDt: date
+    horizonDays: int
+    total: int
+    items: List[HighRiskUser]
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "reportDt": "2025-08-29",
+                "horizonDays": 30,
+                "total": 18450,
+                "items": [
+                    {
+                        "userId": 100023,
+                        "riskBand": "VH",
+                        "churnProbability": 0.9123,
+                        "action": {"policyId": 3, "policy_name": "50% 쿠폰제공"}
+                    }
+                ]
+            }
+        }

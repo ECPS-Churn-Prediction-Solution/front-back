@@ -14,6 +14,7 @@ from api.orders import router as orders_router
 from api.products import router as products_router
 from api.categories import router as categories_router
 from api.logs import router as logs_router
+from api.dashboard import router as dashboard_router
 
 # 로깅 설정
 logger = logging.getLogger(__name__)
@@ -53,6 +54,7 @@ app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
 app.include_router(orders_router, prefix="/api/orders", tags=["orders"])
 app.include_router(products_router, prefix="/api/products")
 app.include_router(categories_router, prefix="/api/categories")
+app.include_router(dashboard_router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(logs_router) # 로그 라우터 추가
 
 
