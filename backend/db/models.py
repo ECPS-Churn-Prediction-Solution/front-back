@@ -3,7 +3,7 @@
 ERD 기반으로 SQLAlchemy 모델 생성
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP, Boolean, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP, Boolean, Numeric, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db.database import Base
