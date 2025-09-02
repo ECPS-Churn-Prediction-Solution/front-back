@@ -568,7 +568,7 @@ def get_rfm_churn_rate(db: Session, report_dt: date, horizon_days: int):
     segments_data = db.query(ChurnSegmentAggr).filter(
         ChurnSegmentAggr.report_dt == report_dt,
         ChurnSegmentAggr.horizon_days == horizon_days,
-        ChurnSegmentAggr.segment_type == 'rfm_bucket'
+        ChurnSegmentAggr.segment_type == 'rfm_segment'
     ).all()
 
     if not segments_data:

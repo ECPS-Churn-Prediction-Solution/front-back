@@ -1,0 +1,14 @@
+{
+    "mcpServers": {
+      "postgresql-mcp": {
+        "command": "node",
+        "args": [
+          "C:/Users/LG/postgresql-mcp-server/build/index.js",
+          "postgresql://postgres:qwer1234!@ecps.c1icaqegae69.ap-northeast-2.rds.amazonaws.com:5432/ecps"
+        ],
+        "disabled": false,
+        "alwaysAllow": []
+      }
+    }
+  }
+  
