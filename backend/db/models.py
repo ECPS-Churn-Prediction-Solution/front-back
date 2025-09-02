@@ -133,7 +133,7 @@ class Order(Base):
     shipping_fee = Column(Float, nullable=False, default=0.0, comment="배송비")
     status = Column(String(50), default="pending", comment="주문 상태")
     shipping_address = Column(String(255), nullable=True, comment="배송 주소")
-    shipping_memo = Column(Text(300), nullable=True, comment="배송 메모")
+    shipping_memo = Column(String(300), nullable=True, comment="배송 메모")
     used_coupon_code = Column(String(50), nullable=True, comment="사용한 쿠폰 코드")
     payment_method = Column(String(50), nullable=True, comment="결제 방법")
     recipient_name = Column(String(100), nullable=True, comment="수령인 이름")

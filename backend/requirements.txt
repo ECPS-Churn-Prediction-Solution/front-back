@@ -1,6 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
+psycopg2-binary
 pydantic
 python-dotenv
 python-multipart
@@ -8,3 +9,5 @@ itsdangerous
 email-validator
 Werkzeug
 psycopg2-binary
+boto3
+

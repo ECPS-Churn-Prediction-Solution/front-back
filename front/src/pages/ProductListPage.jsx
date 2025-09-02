@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiFetch } from '../lib/api.js';
 import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -58,68 +59,35 @@ const ProductListPage = () => {
   const tagOptions = ['Casual', 'Formal', 'Outdoor', 'Office', 'Holiday', 'Limited'];
   const ratingOptions = [5, 4, 3, 2, 1];
 
-  const products = [
-    {
-      id: 1,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/28aaf2ba5e88328230c826a33d6b366fa79e0d26?width=530',
-      category: 'T-Shirt',
-      name: 'Slim Fit Tee',
-      price: '$99',
-      colorCount: 3,
-      colorSwatch: '#DBDCCE',
-      altText: 'Slim Fit Tee'
-    },
-    {
-      id: 2,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/1d2fa53212fad3ac0e7a3879941e28198d597d27?width=530',
-      category: 'Shirt',
-      name: 'Oxford Shirt',
-      price: '$129',
-      colorCount: 2,
-      colorSwatch: '#EAE8D9',
-      altText: 'Oxford Shirt'
-    },
-    {
-      id: 3,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/76264e2f906385fbf7ef33d77775adfc04b54481?width=530',
-      category: 'Polo',
-      name: 'Classic Polo',
-      price: '$89',
-      colorCount: 4,
-      colorSwatch: '#FFF',
-      altText: 'Classic Polo'
-    },
-    {
-      id: 4,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/9d4fb13e41340ce70069ddc8d73ff1099ff3794a?width=530',
-      category: 'Jacket',
-      name: 'Lightweight Jacket',
-      price: '$199',
-      colorCount: 2,
-      colorSwatch: '#DBDCCE',
-      altText: 'Lightweight Jacket'
-    },
-    {
-      id: 5,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/65eb82da31b7df60666ebbe29b6ee0f84f395361?width=530',
-      category: 'Jeans',
-      name: 'Regular Fit Jeans',
-      price: '$149',
-      colorCount: 3,
-      colorSwatch: '#EAE8D9',
-      altText: 'Regular Fit Jeans'
-    },
-    {
-      id: 6,
-      image: 'https://api.builder.io/api/v1/image/assets/TEMP/1f9216617eb9dbed992e6a9ad07bd892e85ff2ab?width=530',
-      category: 'Coat',
-      name: 'Wool Coat',
-      price: '$249',
-      colorCount: 1,
-      colorSwatch: '#FFF',
-      altText: 'Wool Coat'
-    }
-  ];
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await apiFetch('/api/products');
+        // 백엔드 스키마를 UI에 맞게 매핑
+        const mapped = (data || []).map((p) => ({
+          id: p.product_id,
+          image: p.image_url,
+          category: p.category_name || '',
+          name: p.product_name,
+          // 가격은 문자열 표기로 노출
+          price: `₩${p.price}`,
+          colorCount: p.available_variants || 0,
+          colorSwatch: '#DBDCCE',
+          altText: p.product_name,
+        }));
+        setProducts(mapped);
+      } catch (e) {
+        setError(e?.message || '상품 목록을 불러오지 못했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const toggleSize = (size) => {
     setSelectedSizes(prev => 
@@ -354,6 +322,9 @@ const ProductListPage = () => {
               </div>
             </div>
 
+            {error && (
+              <div style={{ color: 'red', marginBottom: 16 }}>{error}</div>
+            )}
             <ProductGrid
               variant="list"
               items={products}
