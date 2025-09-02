@@ -18,7 +18,8 @@ def read_raw_events(path: str) -> List[Dict]:
     events: List[Dict] = []
     if not os.path.exists(path):
         return events
-    with open(path, 'r', encoding='utf-8') as f:
+    # 로그에 비UTF-8 바이트가 섞일 수 있으므로, 디코딩 에러는 무시하고 진행
+    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
         for line in f:
             line = line.strip()
             if not line:

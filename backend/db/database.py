@@ -48,9 +48,19 @@ except Exception:
     pass
 
 # SQLAlchemy 엔진 생성 (한 번만 생성)
+# 커넥션 풀 파라미터를 환경변수로 제어: POOL_SIZE, MAX_OVERFLOW, POOL_TIMEOUT, POOL_RECYCLE
+POOL_SIZE = int(os.getenv("DB_POOL_SIZE", "10"))
+MAX_OVERFLOW = int(os.getenv("DB_MAX_OVERFLOW", "20"))
+POOL_TIMEOUT = int(os.getenv("DB_POOL_TIMEOUT", "30"))
+POOL_RECYCLE = int(os.getenv("DB_POOL_RECYCLE", "1800"))  # 30분
+
 engine = create_engine(
     DATABASE_URL,
-    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
+    connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {},
+    pool_size=POOL_SIZE if "sqlite" not in DATABASE_URL else None,
+    max_overflow=MAX_OVERFLOW if "sqlite" not in DATABASE_URL else None,
+    pool_timeout=POOL_TIMEOUT if "sqlite" not in DATABASE_URL else None,
+    pool_recycle=POOL_RECYCLE if "sqlite" not in DATABASE_URL else None,
 )
 
 
