@@ -3,7 +3,7 @@
 ERD 기반으로 SQLAlchemy 모델 생성
 """
 
-from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP, Boolean, Numeric
+from sqlalchemy import Column, Integer, String, DateTime, Date, Enum, ForeignKey, Float, Text, TIMESTAMP, Boolean, Numeric, ForeignKeyConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from db.database import Base
@@ -240,3 +240,77 @@ class Event(Base):
     user = relationship("User", back_populates="events")
     product = relationship("Product", back_populates="events")
     order = relationship("Order", back_populates="events")
+
+
+# === 대시보드 Mart & Analytics 테이블 모델 ===
+
+class DailyChurnKpi(Base):
+    __tablename__ = 'daily_churn_kpi'
+    __table_args__ = {'schema': 'mart'}
+
+    report_dt = Column(Date, primary_key=True)
+    horizon_days = Column(Integer, primary_key=True)
+    customers_total = Column(Integer)  # BIGINT in source
+    churn_rate = Column(Numeric(6, 4))
+    churn_customers = Column(Integer)  # BIGINT in source
+    created_at = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    modified_at = Column(TIMESTAMP(timezone=True), onupdate=func.now())
+
+class ChurnSegmentAggr(Base):
+    __tablename__ = 'churn_segment_aggr'
+    __table_args__ = {'schema': 'mart'}
+
+    report_dt = Column(Date, primary_key=True)
+    horizon_days = Column(Integer, primary_key=True)
+    segment_type = Column(Text, primary_key=True)
+    segment_key = Column(Text, primary_key=True)
+    customers = Column(Integer)  # BIGINT in source
+    churn_rate = Column(Numeric(6, 4))
+
+class ChurnRiskDistribution(Base):
+    __tablename__ = 'churn_risk_distribution'
+    __table_args__ = {'schema': 'mart'}
+
+    report_dt = Column(Date, primary_key=True)
+    horizon_days = Column(Integer, primary_key=True)
+    risk_band = Column(Text, primary_key=True)
+    user_count = Column(Integer)  # BIGINT in source
+    ratio = Column(Numeric(6, 4))
+
+class HighRiskUser(Base):
+    __tablename__ = 'high_risk_users'
+    __table_args__ = (
+        ForeignKeyConstraint(['policy_id'], ['analytics.action_recommendations.policy_id']),
+        {'schema': 'mart'}
+    )
+
+    report_dt = Column(Date, primary_key=True)
+    horizon_days = Column(Integer, primary_key=True)
+    user_id = Column(Integer, primary_key=True)  # BIGINT in source
+    risk_band = Column(Text)
+    churn_probability = Column(Float(precision=53))  # DOUBLE PRECISION in source
+    policy_id = Column(Integer)
+    action_code = Column(Text)
+    # top features are omitted as per spec
+
+    # Relationship to ActionRecommendation
+    action_recommendation = relationship("ActionRecommendation", viewonly=True)
+
+class ActionRecommendation(Base):
+    __tablename__ = 'action_recommendations'
+    __table_args__ = {'schema': 'analytics'}
+
+    policy_id = Column(Integer, primary_key=True, autoincrement=True)  # BIGSERIAL in source
+    risk_band = Column(Text)
+    action_code = Column(Text)
+    policy_name = Column(Text)
+    is_active = Column(Boolean)
+    effective_from = Column(TIMESTAMP(timezone=True))
+    effective_until = Column(TIMESTAMP(timezone=True))
+
+class DimCustomer(Base):
+    __tablename__ = 'dim_customers'
+    __table_args__ = {'schema': 'analytics'}
+
+    user_id = Column(Integer, primary_key=True)  # BIGINT in source
+    user_name = Column(Text)
