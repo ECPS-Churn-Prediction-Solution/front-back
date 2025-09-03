@@ -2,8 +2,8 @@ import os
 import csv
 import json
 import gzip
-from datetime import datetime
-from typing import List, Dict, Set
+from datetime import datetime, date
+from typing import List, Dict, Set, Iterable
 
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -11,24 +11,66 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from dotenv import load_dotenv
 import boto3
 
-# 입력 로그 파일 (가공 전)
-RAW_LOG_PATH = os.path.join(os.path.dirname(__file__), '..', 'logs', 'events.log')
+LOGS_DIR = os.path.join(os.path.dirname(__file__), '..', 'logs')
 
-def read_raw_events(path: str) -> List[Dict]:
+def _iter_log_paths(logs_dir: str) -> Iterable[str]:
+    """events.log와 회전본(events.log.N)을 모두 찾아 최신순으로 반환"""
+    if not os.path.isdir(logs_dir):
+        return []
+    names = [n for n in os.listdir(logs_dir) if n.startswith('events.log')]
+    # 예: events.log.5, events.log.4, ..., events.log, 최신 우선으로 정렬
+    def _key(n: str) -> int:
+        if n == 'events.log':
+            return 1_000_000  # 가장 최신
+        try:
+            return int(n.split('.')[-1]) * -1  # 큰 숫자일수록 예전 파일
+        except Exception:
+            return 0
+    names.sort(key=_key)
+    return [os.path.join(logs_dir, n) for n in names]
+
+
+def read_raw_events_multi(log_paths: Iterable[str], only_dt: str | None = None) -> List[Dict]:
+    """여러 로그 파일을 순회하며 JSON 라인을 읽고, (옵션) 날짜로 필터링 및 event_id 중복 제거"""
     events: List[Dict] = []
-    if not os.path.exists(path):
-        return events
-    # 로그에 비UTF-8 바이트가 섞일 수 있으므로, 디코딩 에러는 무시하고 진행
-    with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                obj = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            events.append(obj)
+    seen_ids: Set[str] = set()
+    only_dt_obj: date | None = None
+    if only_dt:
+        try:
+            only_dt_obj = datetime.strptime(only_dt[:10], '%Y-%m-%d').date()
+        except Exception:
+            only_dt_obj = None
+
+    for path in log_paths:
+        if not os.path.exists(path):
+            continue
+        with open(path, 'r', encoding='utf-8', errors='ignore') as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    obj = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                # 날짜 필터
+                if only_dt_obj is not None:
+                    try:
+                        et = obj.get('event_time')
+                        if not et:
+                            continue
+                        d = datetime.fromisoformat(et).date()
+                        if d != only_dt_obj:
+                            continue
+                    except Exception:
+                        continue
+                # 중복 제거(event_id 기준)
+                eid = obj.get('event_id')
+                if eid and eid in seen_ids:
+                    continue
+                if eid:
+                    seen_ids.add(eid)
+                events.append(obj)
     return events
 
 def normalize_event(e: Dict) -> Dict:
@@ -81,8 +123,13 @@ def collect_fieldnames(rows: List[Dict]) -> List[str]:
         keys.update(r.keys())
     # 가독성을 위해 대표 컬럼을 앞쪽에 배치
     preferred = [
-        'event_time','log_type','user_id','url','referer','referrer','utm_source','utm_medium','utm_campaign','utm_content',
-        'product_id','order_id','payment_id','coupon_id','quantity','price','price_total','product_name','product_category','session_id','request_id'
+        'event_time', 'log_type', 'event_name',
+        'user_id', 'anon_id',
+        'url', 'page_url', 'referer', 'referrer',
+        'utm_source', 'utm_medium', 'utm_campaign', 'utm_content',
+        'product_id', 'order_id', 'payment_id', 'coupon_id',
+        'quantity', 'price', 'price_total', 'product_name', 'product_category',
+        'session_id', 'request_id'
     ]
     ordered = [c for c in preferred if c in keys]
     rest = sorted([c for c in keys if c not in set(preferred)])
@@ -110,12 +157,15 @@ def main():
     load_dotenv()
     bucket = os.getenv('S3_BUCKET')
     prefix = os.getenv('S3_PREFIX', 'logs/events')
+    # YYYY-MM-DD 형식으로 지정하면 해당 날짜만 필터링
+    only_dt = os.getenv('ONLY_DT')
     if not bucket:
         raise RuntimeError('S3_BUCKET 환경변수가 필요합니다.')
 
     # AWS 자격 증명은 표준 방식 사용: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_DEFAULT_REGION
 
-    raw = read_raw_events(RAW_LOG_PATH)
+    log_paths = list(_iter_log_paths(LOGS_DIR))
+    raw = read_raw_events_multi(log_paths, only_dt=only_dt)
     normalized = [normalize_event(e) for e in raw]
     if not normalized:
         print('No events to export.')

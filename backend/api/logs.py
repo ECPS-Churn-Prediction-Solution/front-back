@@ -49,8 +49,23 @@ def get_product_info(product_id: int) -> Dict[str, Any]:
     }
 
 def log_event(log_type: str, request: Request, data: Dict[str, Any]):
-    """JSON 형식의 로그 메시지를 생성하고 기록합니다."""
+    """JSON 형식의 로그 메시지를 생성하고 기록합니다.
+
+    X-Event-Time 헤더가 유효한 ISO8601이면 이를 event_time으로 사용하여
+    과거 시점 리플레이/시뮬레이션을 지원합니다.
+    """
+    # 기본값: 서버 현재 시각
     event_time = datetime.now().astimezone().isoformat()
+    # 헤더 오버라이드 시도
+    try:
+        header_event_time = request.headers.get("X-Event-Time")
+        if header_event_time:
+            # 표준화된 ISO 문자열로 재직렬화 (파싱 실패 시 무시)
+            parsed = datetime.fromisoformat(header_event_time)
+            event_time = parsed.isoformat()
+    except Exception:
+        # 잘못된 헤더는 무시하고 서버 시각 사용
+        pass
     event_id = str(uuid.uuid4())
     # session_id/anon_id는 프론트에서 쿠키/헤더로 전달 가능. 없으면 None
     session_id = request.headers.get("X-Session-Id")

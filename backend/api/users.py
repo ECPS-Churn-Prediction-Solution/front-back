@@ -98,14 +98,35 @@ async def register_user(user_data: UserRegisterRequest, db: Session = Depends(ge
     try:
         # 사용자 생성
         new_user = create_user(db, user_data)
+        # 가입 생성일(created_at) 백데이트: 시뮬레이터/클라이언트가 보낸 X-Event-Time 헤더가 있으면 우선 적용
+        try:
+            hdr_dt = request.headers.get("X-Event-Time") if request is not None else None
+            if hdr_dt:
+                from datetime import datetime
+                try:
+                    parsed_dt = datetime.fromisoformat(hdr_dt)
+                    new_user.created_at = parsed_dt
+                    db.commit()
+                    db.refresh(new_user)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         # 로깅: 회원가입 성공
         try:
             log_event("auth_register", request, {"user_id": new_user.user_id, "email": new_user.email})
             # 프로필 스냅샷 이벤트 추가 (이후 피처 엔지니어링용)
             try:
+                # gender를 Enum 문자열이 아닌 원시 값("male"|"female"|"other")으로 기록
+                _g = getattr(new_user, "gender", None)
+                try:
+                    gender_str = (getattr(_g, "value") if _g is not None and hasattr(_g, "value") else (str(_g) if _g is not None else ""))
+                except Exception:
+                    gender_str = str(_g or "")
+
                 profile_payload = {
                     "user_id": new_user.user_id,
-                    "gender": str(getattr(new_user, "gender", "") or ""),
+                    "gender": gender_str,
                     "birthdate": str(getattr(new_user, "birthdate", "") or ""),
                     "created_at": str(getattr(new_user, "created_at", "") or ""),
                     "interest_categories": list(getattr(user_data, "interest_categories", []) or []),
