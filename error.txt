@@ -1,0 +1,60 @@
+-- PostgreSQL Dummy Data for additional dashboard time ranges (1, 7, 15 days)
+-- Execute this script against your database to populate the data.
+-- Report date is fixed to '2025-08-29' for consistency.
+
+-- 1. Data for Overall Churn API -> mart.daily_churn_kpi
+INSERT INTO mart.daily_churn_kpi (report_dt, horizon_days, customers_total, churn_rate, retention_rate, churn_customers, created_at)
+VALUES 
+('2025-08-29', 1, 120345, 0.0045, 0.9955, 542, NOW()),
+('2025-08-29', 7, 120345, 0.0310, 0.9690, 3731, NOW()),
+('2025-08-29', 15, 120345, 0.0680, 0.9320, 8183, NOW());
+
+-- 2. Data for RFM Segments API -> mart.churn_segment_aggr
+INSERT INTO mart.churn_segment_aggr (report_dt, horizon_days, segment_type, segment_key, customers, churn_rate)
+VALUES
+-- 1 day
+('2025-08-29', 1, 'rfm_segment', 'High(10-12)', 12000, 0.0060),
+('2025-08-29', 1, 'rfm_segment', 'Mid(7-9)', 34000, 0.0037),
+('2025-08-29', 1, 'rfm_segment', 'Low(3-6)', 56000, 0.0028),
+-- 7 days
+('2025-08-29', 7, 'rfm_segment', 'High(10-12)', 12000, 0.0425),
+('2025-08-29', 7, 'rfm_segment', 'Mid(7-9)', 34000, 0.0261),
+('2025-08-29', 7, 'rfm_segment', 'Low(3-6)', 56000, 0.0195),
+-- 15 days
+('2025-08-29', 15, 'rfm_segment', 'High(10-12)', 12000, 0.0913),
+('2025-08-29', 15, 'rfm_segment', 'Mid(7-9)', 34000, 0.0560),
+('2025-08-29', 15, 'rfm_segment', 'Low(3-6)', 56000, 0.0418);
+
+-- 3. Data for Risk Distribution API -> mart.churn_risk_distribution (for 1, 7, 15, 30 days)
+-- The original data was for 90 days, adding more granular data.
+INSERT INTO mart.churn_risk_distribution (report_dt, horizon_days, risk_band, user_count, ratio)
+VALUES
+-- 1 day
+('2025-08-29', 1, 'VH', 911, 0.0076),
+('2025-08-29', 1, 'H', 1138, 0.0095),
+-- 7 days
+('2025-08-29', 7, 'VH', 2200, 0.0183),
+('2025-08-29', 7, 'H', 2750, 0.0228),
+-- 15 days
+('2025-08-29', 15, 'VH', 4100, 0.0341),
+('2025-08-29', 15, 'H', 5125, 0.0426),
+-- 30 days (to match other metrics)
+('2025-08-29', 30, 'VH', 6150, 0.0511),
+('2025-08-29', 30, 'H', 7688, 0.0639);
+
+-- 4. Data for High-Risk Users API -> mart.high_risk_users (for 1, 7, 15, 30 days)
+-- The original data was for 90 days, adding more granular data.
+INSERT INTO mart.high_risk_users (report_dt, horizon_days, user_id, risk_band, churn_probability, policy_id, action_code)
+VALUES
+-- 1 day
+('2025-08-29', 1, 100023, 'VH', 0.1014, 3, 'ACTION_CDE_03'),
+-- 7 days
+('2025-08-29', 7, 100023, 'VH', 0.3550, 3, 'ACTION_CDE_03'),
+('2025-08-29', 7, 200145, 'H', 0.3015, 2, 'ACTION_CDE_02'),
+-- 15 days
+('2025-08-29', 15, 100023, 'VH', 0.6523, 3, 'ACTION_CDE_03'),
+('2025-08-29', 15, 200145, 'H', 0.5842, 2, 'ACTION_CDE_02'),
+-- 30 days
+('2025-08-29', 30, 100023, 'VH', 0.8513, 3, 'ACTION_CDE_03'),
+('2025-08-29', 30, 200145, 'H', 0.7942, 2, 'ACTION_CDE_02');
+

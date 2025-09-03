@@ -34,4 +34,38 @@ export async function apiFetch(path, options = {}) {
   return data;
 }
 
+export async function getOverallChurnRate(reportDt, horizonDays = 30) {
+  const params = new URLSearchParams({
+    reportDt: reportDt,
+    horizonDays: horizonDays,
+  });
+  return await apiFetch(`/api/dashboard/churn-rate/overall?${params}`);
+}
+
+export async function getRfmChurnRate(reportDt, horizonDays = 30) {
+  const params = new URLSearchParams({
+    reportDt: reportDt,
+    horizonDays: horizonDays,
+  });
+  return await apiFetch(`/api/dashboard/churn-rate/rfm-segments?${params}`);
+}
+
+export async function getChurnRiskDistribution(reportDt, horizonDays = 30) {
+  const params = new URLSearchParams({
+    reportDt: reportDt,
+    horizonDays: horizonDays,
+  });
+  return await apiFetch(`/api/dashboard/churn-risk/distribution?${params}`);
+}
+
+export async function getHighRiskUsers(reportDt, horizonDays = 30, page = 1, per_page = 10) {
+  const params = new URLSearchParams({
+    reportDt: reportDt,
+    horizonDays: horizonDays,
+    page: page,
+    per_page: per_page,
+  });
+  return await apiFetch(`/api/dashboard/high-risk-users?${params}`);
+}
+
 
