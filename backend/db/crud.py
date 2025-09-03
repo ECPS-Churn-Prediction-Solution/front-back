@@ -554,7 +554,15 @@ def get_overall_churn_rate(db: Session, report_dt: date, horizon_days: int):
     ).first()
 
     if not kpi_data:
-        return None
+        # 데이터가 없을 경우, 기본 0 값으로 응답 객체를 생성
+        return {
+            "reportDt": report_dt,
+            "horizonDays": horizon_days,
+            "customersTotal": 0,
+            "churnRate": 0.0,
+            "retentionRate": 1.0,
+            "churnCustomers": 0
+        }
 
     retention_rate = 1 - kpi_data.churn_rate
     return {
@@ -577,7 +585,12 @@ def get_rfm_churn_rate(db: Session, report_dt: date, horizon_days: int):
     ).all()
 
     if not segments_data:
-        return None
+        # 데이터가 없을 경우, 빈 세그먼트 리스트로 응답
+        return {
+            "reportDt": report_dt,
+            "horizonDays": horizon_days,
+            "segments": []
+        }
 
     segments = [
         {
@@ -604,7 +617,16 @@ def get_churn_risk_distribution(db: Session, report_dt: date, horizon_days: int)
     ).all()
 
     if not distribution_data:
-        return None
+        # 데이터가 없을 경우, 빈 밴드 리스트와 0 값으로 응답
+        return {
+            "reportDt": report_dt,
+            "horizonDays": horizon_days,
+            "bands": [],
+            "atRisk": {
+                "userCount": 0,
+                "ratio": 0.0
+            }
+        }
 
     bands = [
         {"riskBand": d.risk_band, "userCount": d.user_count, "ratio": d.ratio}

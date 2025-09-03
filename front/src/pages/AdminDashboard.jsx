@@ -1,41 +1,94 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import './AdminDashboard.css';
 import { buildGrafanaBoardUrl } from '../lib/grafana';
+import {
+  getOverallChurnRate,
+  getRfmChurnRate,
+  getChurnRiskDistribution,
+  getHighRiskUsers,
+} from '../lib/api';
 
 const publicUrl = import.meta.env.VITE_GRAFANA_PUBLIC_DASHBOARD_URL;
 const baseUrl = import.meta.env.VITE_GRAFANA_BASE_URL;
 const uid = import.meta.env.VITE_GRAFANA_DASHBOARD_UID;
 const orgId = import.meta.env.VITE_GRAFANA_ORG_ID ? Number(import.meta.env.VITE_GRAFANA_ORG_ID) : undefined;
 const theme = import.meta.env.VITE_GRAFANA_THEME || 'light';
-const timeFrom = import.meta.env.VITE_GRAFANA_TIME_FROM || 'now-30d';
-const timeTo = import.meta.env.VITE_GRAFANA_TIME_TO || 'now';
+
+// YYYY-MM-DD 포맷으로 날짜를 반환하는 함수
+const getISODate = (date) => {
+  return date.toISOString().split('T')[0];
+};
 
 const AdminDashboard = () => {
-  const [range, setRange] = useState('7d');
-  const effectiveFrom = useMemo(() => {
-    if (range === '7d') return 'now-7d';
-    if (range === '14d') return 'now-14d';
-    return 'now-30d';
+  const [range, setRange] = useState('30d');
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const { effectiveFrom, reportDate } = useMemo(() => {
+    // NOTE: Hardcode report date to match dummy data
+    const now = new Date('2025-08-29T12:00:00Z'); // Use a fixed date for which dummy data exists
+    let days;
+    if (range === '7d') days = 7;
+    else if (range === '14d') days = 14;
+    else days = 30;
+    // The 'from' date for Grafana doesn't need to be precise for this case
+    return { effectiveFrom: `now-${range}`, reportDate: getISODate(now) };
   }, [range]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const horizonDays = parseInt(range.replace('d', ''), 10);
+
+        const [
+          overall,
+          rfm,
+          distribution,
+          highRisk,
+        ] = await Promise.all([
+          getOverallChurnRate(reportDate, horizonDays),
+          getRfmChurnRate(reportDate, horizonDays),
+          getChurnRiskDistribution(reportDate, horizonDays),
+          getHighRiskUsers(reportDate, horizonDays, 1, 10),
+        ]);
+        
+        setDashboardData({ overall, rfm, distribution, highRisk });
+
+        // 다른 데이터 확인용
+        console.log('RFM Segments:', rfm);
+        console.log('Churn Risk Distribution:', distribution);
+        console.log('High Risk Users:', highRisk);
+
+      } catch (err) {
+        setError(err.message || '데이터를 불러오는 데 실패했습니다.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [range, reportDate]);
+
+
   const sanitizeGrafanaUrl = (raw) => {
     try {
       const u = new URL(raw);
-      // 경로가 /d/ 인 경우 단일 패널이면 /d-solo/ 로 교체
       if (u.pathname.startsWith('/d/') && (u.searchParams.has('panelId') || u.searchParams.has('viewPanel'))) {
         u.pathname = u.pathname.replace('/d/', '/d-solo/');
       }
       const p = u.searchParams;
-      // panelId / viewPanel 양쪽 모두 지원 (삭제하지 않음)
       if (p.has('panelId') && !p.has('viewPanel')) p.set('viewPanel', p.get('panelId'));
       if (p.has('viewPanel') && !p.has('panelId')) p.set('panelId', p.get('viewPanel'));
       if (!p.has('kiosk')) p.set('kiosk', 'tv');
       if (!p.has('theme')) p.set('theme', theme);
-      // 기간은 셀렉터 값을 우선 사용
       p.set('from', effectiveFrom);
       p.set('to', 'now');
-      // 불필요 파라미터 정리
       p.delete('refresh');
       p.delete('timezone');
       p.delete('__feature.dashboardSceneSolo');
@@ -56,46 +109,7 @@ const AdminDashboard = () => {
         orgId,
       });
 
-  const churnSeries = useMemo(() => {
-    // 목업 라인 차트 데이터 (최근 30일)
-    const days = Array.from({ length: 30 }, (_, i) => i).map(i => {
-      const d = new Date();
-      d.setDate(d.getDate() - (29 - i));
-      const label = `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      // 3%~6% 사이 랜덤 곡선
-      const base = 3 + (i % 7) * 0.3;
-      const noise = (Math.sin(i / 3) + 1) * 0.6;
-      const value = Math.min(6.2, Math.max(2.5, base + noise));
-      return { label, value };
-    });
-    return days;
-  }, []);
-
-  const chart = useMemo(() => {
-    const width = 880;
-    const height = 320;
-    const padding = { left: 40, right: 20, top: 20, bottom: 40 };
-    const innerW = width - padding.left - padding.right;
-    const innerH = height - padding.top - padding.bottom;
-
-    const maxV = 6.5;
-    const minV = 2.0;
-    const xStep = innerW / (churnSeries.length - 1);
-    const points = churnSeries.map((p, idx) => {
-      const x = padding.left + idx * xStep;
-      const y = padding.top + innerH - ((p.value - minV) / (maxV - minV)) * innerH;
-      return `${x},${y}`;
-    }).join(' ');
-
-    const xTicks = [0, 7, 14, 21, 29];
-    const xLabels = xTicks.map(i => ({
-      x: padding.left + i * xStep,
-      label: churnSeries[i].label
-    }));
-
-    const yTicks = [2, 3, 4, 5, 6];
-    return { width, height, padding, points, xLabels, yTicks };
-  }, [churnSeries]);
+  const kpi = dashboardData?.overall;
 
   return (
     <div className="App admin-dashboard">
@@ -128,35 +142,59 @@ const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="kpi-row">
-              <div className="kpi-card large">
-                <div className="kpi-title">처리해야 할 제안</div>
-                <div className="kpi-value">15 건</div>
-                <div className="kpi-badge danger">긴급</div>
-                <div className="kpi-sub">처리 필요</div>
+            {loading && <div className="loading-indicator">데이터를 불러오는 중...</div>}
+            {error && <div className="error-message">{error}</div>}
+            
+            {!loading && !error && kpi && (
+              <div className="kpi-row">
+                <div className="kpi-card large">
+                  <div className="kpi-title">이탈 예측 사용자</div>
+                  <div className="kpi-value">{kpi.churnCustomers.toLocaleString()} 명</div>
+                  <div className="kpi-badge info">지난 {kpi.horizonDays}일 예측</div>
+                  <div className="kpi-sub">전체 {kpi.customersTotal.toLocaleString()}명 중</div>
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-title">전체 이탈률</div>
+                  <div className="kpi-value">{(kpi.churnRate * 100).toFixed(1)}%</div>
+                  <div className="kpi-delta">({(kpi.retentionRate * 100).toFixed(1)}% 유지)</div>
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-title">RFM 이탈률 (상위)</div>
+                  {dashboardData.rfm?.segments?.length > 0 ? (
+                    <>
+                      <div className="kpi-value">{(dashboardData.rfm.segments[0].churnRate * 100).toFixed(1)}%</div>
+                      <div className="kpi-delta up">{dashboardData.rfm.segments[0].bucket}</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="kpi-value">N/A</div>
+                      <div className="kpi-delta">데이터 없음</div>
+                    </>
+                  )}
+                </div>
+                <div className="kpi-card">
+                  <div className="kpi-title">고위험 사용자</div>
+                  {dashboardData.distribution?.bands?.length > 0 ? (
+                    <>
+                      <div className="kpi-value">{dashboardData.distribution.bands[0].userCount.toLocaleString()} 명</div>
+                      <div className="kpi-delta down">{dashboardData.distribution.bands[0].riskBand} 등급</div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="kpi-value">N/A</div>
+                      <div className="kpi-delta">데이터 없음</div>
+                    </>
+                  )}
+                </div>
               </div>
-              <div className="kpi-card">
-                <div className="kpi-title">금일 신규 고위험군</div>
-                <div className="kpi-value">42 명</div>
-                <div className="kpi-delta up">+12% vs 어제</div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-title">최근 30일 이탈율</div>
-                <div className="kpi-value">5.2%</div>
-                <div className="kpi-delta down">-0.8% vs 지난달</div>
-              </div>
-              <div className="kpi-card">
-                <div className="kpi-title">전체 활성 고객</div>
-                <div className="kpi-value">15,023 명</div>
-                <div className="kpi-delta up">+3.2% vs 지난달</div>
-              </div>
-            </div>
+            )}
 
             <div className="panel-toolbar">
               <div className="panel-title">일자별 고객 이탈율 그래프</div>
               <select className="range-select" value={range} onChange={(e) => setRange(e.target.value)}>
+                <option value="1d">최근 1일</option>
                 <option value="7d">최근 7일</option>
-                <option value="14d">최근 14일</option>
+                <option value="15d">최근 15일</option>
                 <option value="30d">최근 30일</option>
               </select>
             </div>
@@ -174,25 +212,25 @@ const AdminDashboard = () => {
               </section>
             ) : (
               <section className="panel full">
-                <div className="panel-title">일자별 고객 이탈율</div>
-                <svg width={chart.width} height={chart.height} className="line-chart">
-                  <polyline fill="none" stroke="#2563eb" strokeWidth="2" points={chart.points} />
-                  {chart.xLabels.map(x => (
-                    <text key={x.label} x={x.x} y={chart.height - 10} textAnchor="middle" className="axis-label">{x.label}</text>
-                  ))}
-                  {chart.yTicks.map(y => (
-                    <g key={y}>
-                      <text x={10} y={20 + (chart.height - 60) - ((y - 2) * ((chart.height - 60) / 4))} className="axis-label">{y}.0%</text>
-                    </g>
-                  ))}
-                </svg>
+                <div className="panel-title">데이터 시각화 영역</div>
+                <div className="placeholder-content">
+                  {loading && <p>차트 데이터를 불러오는 중입니다...</p>}
+                  {error && <p>차트 데이터를 불러오는 데 실패했습니다: {error}</p>}
+                  {!loading && !error && dashboardData && (
+                    <p>
+                      API 연결이 완료되었습니다. <br/>
+                      이 영역에 <code>dashboardData.rfm</code>, <code>dashboardData.distribution</code> 등의 데이터를 사용하여<br/>
+                      차트나 테이블을 구현할 수 있습니다.
+                    </p>
+                  )}
+                </div>
               </section>
             )}
 
-            {!publicUrl && (!baseUrl || !uid) && (
+            {!publicUrl && (!baseUrl || !uid) && !loading && !error && (
               <section className="dashboard-hint">
                 <p>
-                  Grafana 설정 시 자동으로 임베드가 표시됩니다. 현재는 목업 데이터를 표시 중입니다.
+                  Grafana가 설정되지 않아 API 기반의 목업 데이터를 표시합니다.
                 </p>
               </section>
             )}
