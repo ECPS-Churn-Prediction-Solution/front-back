@@ -108,4 +108,7 @@ export async function rejectPolicyAction(userId, policyId, reason = null) {
   });
 }
 
+export async function getMyCoupons() {
+  return await apiFetch('/api/users/my-coupons');
+}
 

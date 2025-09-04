@@ -46,7 +46,17 @@ const AdminDashboard = () => {
       alert(`✅ 정책 승인 성공하였습니다\n${message}`);
       console.log('승인 완료:', result);
       
-      await fetchDashboardData();
+      // 승인된 항목을 즉시 제거
+      setDashboardData(prev => ({
+        ...prev,
+        highRisk: {
+          ...prev.highRisk,
+          items: prev.highRisk.items.filter(item => 
+            !(item.userId === userId && item.action.policyId === policyId)
+          ),
+          total: prev.highRisk.total - 1
+        }
+      }));
       
     } catch (error) {
       console.error('승인 실패:', error);
@@ -72,7 +82,17 @@ const AdminDashboard = () => {
       alert(`❌ 정책 거절 성공하였습니다\n${message}`);
       console.log('거절 완료:', result);
       
-      await fetchDashboardData();
+      // 거절된 항목을 즉시 제거
+      setDashboardData(prev => ({
+        ...prev,
+        highRisk: {
+          ...prev.highRisk,
+          items: prev.highRisk.items.filter(item => 
+            !(item.userId === userId && item.action.policyId === policyId)
+          ),
+          total: prev.highRisk.total - 1
+        }
+      }));
       
     } catch (error) {
       console.error('거절 실패:', error);
@@ -377,6 +397,7 @@ const AdminDashboard = () => {
                         <option value={20}>20</option>
                         <option value={50}>50</option>
                         <option value={100}>100</option>
+                        <option value={200}>200</option>
                       </select>
                     </label>
                     <button className="approve-btn" onClick={() => setPage(p => Math.max(1, p - 1))}>이전</button>

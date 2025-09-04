@@ -6,7 +6,7 @@
 from sqlalchemy.orm import Session
 from db.models import (
     User, Product, Category, CartItem, Order, OrderItem, ProductVariant, UserInterest,
-    DailyChurnKpi, ChurnSegmentAggr, ChurnRiskDistribution, HighRiskUser, ActionRecommendation
+    DailyChurnKpi, ChurnSegmentAggr, ChurnRiskDistribution, HighRiskUser,ActionRecommendation
 )
 from db.schemas import UserRegisterRequest, OrderCreateRequest, CartItemAdd, DirectOrderRequest
 from api.auth import get_password_hash, verify_password
@@ -17,11 +17,11 @@ from datetime import date
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """
     이메일로 사용자 조회
-    
+
     Args:
         db: 데이터베이스 세션
         email: 사용자 이메일
-    
+
     Returns:
         User: 사용자 객체 (없으면 None)
     """
@@ -30,11 +30,11 @@ def get_user_by_email(db: Session, email: str) -> Optional[User]:
 def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
     """
     사용자 ID로 사용자 조회
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-    
+
     Returns:
         User: 사용자 객체 (없으면 None)
     """
@@ -44,17 +44,17 @@ def create_user(db: Session, user_data: UserRegisterRequest) -> User:
     """
     새 사용자 생성 (회원가입)
     사용자 정보와 관심사를 데이터베이스에 저장
-    
+
     Args:
         db: 데이터베이스 세션
         user_data: 회원가입 요청 데이터
-    
+
     Returns:
         User: 생성된 사용자 객체
     """
     # 비밀번호 해싱
     hashed_password = get_password_hash(user_data.password)
-    
+
     # 사용자 객체 생성
     db_user = User(
         email=user_data.email,
@@ -64,22 +64,22 @@ def create_user(db: Session, user_data: UserRegisterRequest) -> User:
         birthdate=user_data.birthdate,
         phone_number=user_data.phone_number
     )
-    
+
     # 데이터베이스에 사용자 추가
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    
+
     # 관심사 추가 (있는 경우)
     if user_data.interest_categories:
         add_user_interests(db, db_user.user_id, user_data.interest_categories)
-    
+
     return db_user
 
 def add_user_interests(db: Session, user_id: int, category_ids: List[int]) -> None:
     """
     사용자의 관심사 추가
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
@@ -96,24 +96,24 @@ def add_user_interests(db: Session, user_id: int, category_ids: List[int]) -> No
             UserInterest.user_id == user_id,
             UserInterest.category_id == category_id
         ).first()
-        
+
         # 존재하지 않으면 추가
         if not existing_interest:
             interest = UserInterest(user_id=user_id, category_id=category_id)
             db.add(interest)
-    
+
     db.commit()
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     """
     사용자 인증 (로그인)
     이메일과 비밀번호로 사용자 검증
-    
+
     Args:
         db: 데이터베이스 세션
         email: 사용자 이메일
         password: 평문 비밀번호
-    
+
     Returns:
         User: 인증된 사용자 객체 (인증 실패 시 None)
     """
@@ -121,28 +121,28 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
     user = get_user_by_email(db, email)
     if not user:
         return None
-    
+
     # 비밀번호 검증
     if not verify_password(password, user.password_hash):
         return None
-    
+
     return user
 
 def get_user_interests(db: Session, user_id: int) -> List[int]:
     """
     사용자의 관심사 카테고리 ID 리스트 조회
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-    
+
     Returns:
         List[int]: 관심 카테고리 ID 리스트
     """
     interests = db.query(UserInterest.category_id).filter(
         UserInterest.user_id == user_id
     ).all()
-    
+
     return [interest.category_id for interest in interests]
 
 # === 상품 관련 CRUD 함수 ===
@@ -285,17 +285,17 @@ def remove_cart_item_by_id(db: Session, cart_item_id: int) -> bool:
         db.delete(cart_item)
         db.commit()
         return True
-    
+
     return False
 
 def clear_cart(db: Session, user_id: int) -> bool:
     """
     사용자의 장바구니 전체 비우기
-    
+
     Args:
         db: 데이터베이스 세션
         user_id: 사용자 ID
-    
+
     Returns:
         bool: 성공 여부
     """
@@ -303,10 +303,10 @@ def clear_cart(db: Session, user_id: int) -> bool:
         # 사용자의 모든 장바구니 항목 삭제
         deleted_count = db.query(CartItem).filter(CartItem.user_id == user_id).delete()
         db.commit()
-        
+
         print(f"사용자 {user_id}의 장바구니 {deleted_count}개 항목 삭제 완료")
         return True
-        
+
     except Exception as e:
         print(f"장바구니 비우기 실패: {e}")
         db.rollback()
@@ -317,10 +317,10 @@ def clear_cart(db: Session, user_id: int) -> bool:
 def get_all_categories(db: Session) -> List[Category]:
     """
     모든 카테고리 목록 조회
-    
+
     Args:
         db: 데이터베이스 세션
-    
+
     Returns:
         List[Category]: 전체 카테고리 목록
     """
@@ -331,10 +331,10 @@ def get_all_categories(db: Session) -> List[Category]:
 def get_all_products(db: Session) -> List[Product]:
     """
     모든 상품 목록 조회 (간단 버전)
-    
+
     Args:
         db: 데이터베이스 세션
-    
+
     Returns:
         List[Product]: 전체 상품 목록
     """
@@ -343,11 +343,11 @@ def get_all_products(db: Session) -> List[Product]:
 def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Product]:
     """
     상품 ID로 상품과 옵션 정보 조회
-    
+
     Args:
         db: 데이터베이스 세션
         product_id: 상품 ID
-    
+
     Returns:
         Product: 상품 객체 (옵션 포함)
     """
@@ -356,11 +356,11 @@ def get_product_by_id_with_variants(db: Session, product_id: int) -> Optional[Pr
 def get_product_variants(db: Session, product_id: int) -> List[ProductVariant]:
     """
     상품의 모든 옵션 조회
-    
+
     Args:
         db: 데이터베이스 세션
         product_id: 상품 ID
-    
+
     Returns:
         List[ProductVariant]: 상품 옵션 목록
     """
@@ -369,47 +369,35 @@ def get_product_variants(db: Session, product_id: int) -> List[ProductVariant]:
 # === 주문 관련 CRUD 함수 ===
 
 def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateRequest) -> Order:
-    """
-    장바구니 정보를 바탕으로 주문 생성
-
-    Args:
-        db: 데이터베이스 세션
-        user_id: 사용자 ID
-        order_data: 주문 생성 데이터
-
-    Returns:
-        Order: 생성된 주문 객체
-
-    Raises:
-        ValueError: 장바구니가 비어있을 때
-    """
+    """장바구니에서 주문 생성 (쿠폰 적용 포함)"""
     # 장바구니 아이템들 조회
     cart_items = get_cart_items(db, user_id)
-
     if not cart_items:
         raise ValueError("장바구니가 비어있습니다.")
 
-    # 주문 전, 장바구니의 모든 상품에 대한 재고를 미리 확인
+    # 재고 확인
     for cart_item in cart_items:
         variant = cart_item.variant
         if variant.stock_quantity < cart_item.quantity:
-            raise ValueError(
-                f"'{variant.product.product_name} ({variant.color}/{variant.size})' 상품의 재고가 부족합니다. "
-                f"현재 재고: {variant.stock_quantity}개, 주문 수량: {cart_item.quantity}개"
-            )
+            raise ValueError(f"재고가 부족합니다.")
 
-    # 총 금액 계산 (상품 총액 + 배송비)
-    items_total = 0.0
-    for cart_item in cart_items:
-        items_total += float(cart_item.variant.product.price * cart_item.quantity)
-    # 기본 배송비 정책: 장바구니에 상품이 있으면 3000원 부과
-    # 클라이언트가 전달한 배송비 우선, 없으면 기본 정책 적용
-    requested_fee = float(getattr(order_data, 'shipping_fee', 0) or 0)
-    shipping_fee = requested_fee if requested_fee > 0 else (3000.0 if cart_items else 0.0)
-    total_amount = items_total + shipping_fee
+    # 상품 총액 계산
+    items_total = sum(float(cart_item.variant.product.price * cart_item.quantity) for cart_item in cart_items)
+    shipping_fee = float(order_data.shipping_fee or 3000.0)
+
+    # 쿠폰 적용 로직
+    coupon_discount = 0.0
+    if order_data.used_coupon_code:
+        coupon = get_coupon_by_code(db, user_id, order_data.used_coupon_code)
+        if coupon:
+            coupon_discount = float(coupon.discount_amount)
+        else:
+            raise ValueError("유효하지 않은 쿠폰입니다.")
+
+    # 최종 금액 계산
+    total_amount = max(0, items_total + shipping_fee - coupon_discount)
 
     # 주문 생성
-    # ... (Order 생성 로직은 동일)
     new_order = Order(
         user_id=user_id,
         total_amount=total_amount,
@@ -426,9 +414,9 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
         phone_number=order_data.phone_number
     )
     db.add(new_order)
-    db.flush()  # order_id를 얻기 위해 flush
+    db.flush()
 
-    # 주문 상품들 생성 (variant_id 기준)
+    # 주문 상품들 생성
     for cart_item in cart_items:
         order_item = OrderItem(
             order_id=new_order.order_id,
@@ -436,10 +424,15 @@ def create_order_from_cart(db: Session, user_id: int, order_data: OrderCreateReq
             quantity=cart_item.quantity,
             price_per_item=cart_item.variant.product.price
         )
-        # 재고 차감
         cart_item.variant.stock_quantity -= cart_item.quantity
-
         db.add(order_item)
+
+    # 쿠폰 사용 처리
+    if order_data.used_coupon_code and coupon_discount > 0:
+        coupon = get_coupon_by_code(db, user_id, order_data.used_coupon_code)
+        if coupon:
+            coupon.is_used = True
+            coupon.used_at = datetime.now()
 
     # 장바구니 비우기
     clear_cart(db, user_id)
@@ -652,7 +645,7 @@ def get_high_risk_users(db: Session, report_dt: date, horizon_days: int, page: i
     고위험 사용자 리스트를 데이터베이스에서 조회 (페이징 지원)
     """
     offset = (page - 1) * per_page
-    
+
     # Query for the total count first
     total_count_query = db.query(HighRiskUser).filter(
         HighRiskUser.report_dt == report_dt,
@@ -698,3 +691,85 @@ def get_action_recommendation(db: Session, policy_id: int, risk_band: str):
         ActionRecommendation.policy_id == policy_id,
         ActionRecommendation.risk_band == risk_band
     ).first()
+
+def get_user_coupons(db: Session, user_id: int):
+    """사용자의 사용 가능한 쿠폰 목록 조회"""
+    from db.models import Coupon
+    from datetime import datetime
+
+    return db.query(Coupon).filter(
+        Coupon.user_id == user_id,
+        Coupon.expires_at > datetime.now(),
+        Coupon.is_used == False
+    ).order_by(Coupon.created_at.desc()).all()
+
+def get_coupon_by_code(db: Session, user_id: int, coupon_code: str):
+    """쿠폰 코드로 쿠폰 조회"""
+    from db.models import Coupon
+    from datetime import datetime
+
+    return db.query(Coupon).filter(
+        Coupon.coupon_code == coupon_code,
+        Coupon.user_id == user_id,
+        Coupon.is_used == False,
+        Coupon.expires_at > datetime.now()
+    ).first()
+
+def issue_coupon_for_user(db: Session, user_id: int, policy_name: str) -> str:
+    """사용자에게 쿠폰을 지급합니다."""
+    from datetime import datetime, timedelta
+    from db.models import Coupon
+    import random
+    import string
+
+    # 쿠폰 코드 생성
+    coupon_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+
+    # 쿠폰 만료일 (30일 후)
+    expires_at = datetime.now() + timedelta(days=30)
+
+    # 할인 금액 결정 (정책명에 따라)
+    discount_amount = 5000  # 기본값
+    if "50%" in policy_name:
+        discount_amount = 10000
+    elif "30%" in policy_name:
+        discount_amount = 7000
+    elif "20%" in policy_name:
+        discount_amount = 5000
+
+    # 쿠폰 생성
+    new_coupon = Coupon(
+        user_id=user_id,
+        coupon_code=coupon_code,
+        discount_amount=discount_amount,
+        policy_name=policy_name,
+        expires_at=expires_at,
+        created_at=datetime.now()
+    )
+
+    db.add(new_coupon)
+    db.commit()
+    db.refresh(new_coupon)
+
+    return coupon_code
+
+def delete_high_risk_user(db: Session, user_id: int, policy_id: int) -> bool:
+    """
+    고위험 사용자 데이터를 삭제합니다.
+    """
+    from sqlalchemy import text
+
+    try:
+        result = db.execute(text("""
+            DELETE FROM mart.high_risk_users
+            WHERE user_id = :user_id AND policy_id = :policy_id
+        """), {
+            "user_id": user_id,
+            "policy_id": policy_id
+        })
+        db.commit()
+        return result.rowcount > 0
+    except Exception as e:
+        print(f"고위험 사용자 삭제 실패: {e}")
+        db.rollback()
+        return False

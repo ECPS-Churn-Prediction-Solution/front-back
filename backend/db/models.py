@@ -23,13 +23,30 @@ class DeliveryStatusEnum(enum.Enum):
     shipping = "상품 배송중"
     delivered = "상품 배송완료"
 
+class Coupon(Base):
+    """
+    쿠폰 모델
+    """
+    __tablename__ = "coupons"
+
+    coupon_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    coupon_code = Column(String(50), unique=True, nullable=False)
+    discount_amount = Column(Float, nullable=False)
+    policy_name = Column(String(100))
+    expires_at = Column(TIMESTAMP, nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    is_used = Column(Boolean, default=False)
+    used_at = Column(TIMESTAMP, nullable=True)
+
+
 class User(Base):
     """
     사용자 테이블
     고객의 기본 정보와 로그인 정보를 저장
     """
     __tablename__ = "users"
-    
+
     user_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="고객 고유 번호")
     email = Column(String(255), unique=True, nullable=False, index=True, comment="로그인 이메일")
     password_hash = Column(String(255), nullable=False, comment="해시 처리된 비밀번호")
@@ -41,7 +58,7 @@ class User(Base):
     address_main = Column(String(255), nullable=True, comment="기본 주소")
     address_detail = Column(String(255), nullable=True, comment="상세 주소")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="가입일")
-    
+
     # 관계 설정
     interests = relationship("UserInterest", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user")
@@ -49,17 +66,21 @@ class User(Base):
     logins = relationship("UserLogin", back_populates="user")
     events = relationship("Event", back_populates="user")
 
+# 순환 참조를 피하기 위해 관계를 외부에서 설정
+Coupon.user = relationship("User", back_populates="coupons")
+User.coupons = relationship("Coupon", back_populates="user")
+
 class Category(Base):
     """
     카테고리 테이블
     상품의 종류를 나누는 기준이자, 고객의 관심 분야 목록
     """
     __tablename__ = "categories"
-    
+
     category_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="카테고리 고유 번호")
     category_name = Column(String(100), unique=True, nullable=False, comment="카테고리명")
     parent_id = Column(Integer, ForeignKey("categories.category_id"), nullable=True, comment="상위 카테고리 ID")
-    
+
     # 관계 설정
     interests = relationship("UserInterest", back_populates="category")
     products = relationship("Product", back_populates="category")
@@ -72,10 +93,10 @@ class UserInterest(Base):
     고객과 관심사를 연결하는 Many-to-Many 브릿지 테이블
     """
     __tablename__ = "user_interests"
-    
+
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True, comment="고객 ID")
     category_id = Column(Integer, ForeignKey("categories.category_id"), primary_key=True, comment="관심 카테고리 ID")
-    
+
     # 관계 설정
     user = relationship("User", back_populates="interests")
     category = relationship("Category", back_populates="interests")
@@ -86,7 +107,7 @@ class Product(Base):
     판매하는 개별 의류 상품 정보를 저장
     """
     __tablename__ = "products"
-    
+
     product_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="상품 고유 번호")
     category_id = Column(Integer, ForeignKey("categories.category_id"), nullable=False, comment="상품이 속한 카테고리")
     product_name = Column(String(255), nullable=False, comment="상품명")
@@ -94,7 +115,7 @@ class Product(Base):
     price = Column(Float, nullable=False, comment="상품 가격")
     image_url = Column(String(500), nullable=True, comment="상품 이미지 URL")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="상품 등록일")
-    
+
     # 관계 설정
     category = relationship("Category", back_populates="products")
     variants = relationship("ProductVariant", back_populates="product", cascade="all, delete-orphan")
@@ -125,7 +146,7 @@ class Order(Base):
     고객의 주문 마스터 정보를 저장
     """
     __tablename__ = "orders"
-    
+
     order_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="주문 고유 번호")
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, comment="주문한 고객 ID")
     order_date = Column(TIMESTAMP, server_default=func.now(), comment="주문 일시")
@@ -141,7 +162,7 @@ class Order(Base):
     address_main = Column(String(255), nullable=True, comment="기본 주소")
     address_detail = Column(String(255), nullable=True, comment="상세 주소")
     phone_number = Column(String(20), nullable=True, comment="연락처")
-    
+
     # 관계 설정
     user = relationship("User", back_populates="orders")
     order_items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
@@ -154,7 +175,7 @@ class OrderItem(Base):
     ERD에 따라 variant_id를 사용
     """
     __tablename__ = "order_items"
-    
+
     order_item_id = Column(Integer, primary_key=True, index=True, autoincrement=True, comment="주문 항목 고유 번호")
     order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False, comment="주문 번호")
     variant_id = Column(Integer, ForeignKey("product_variants.variant_id"), nullable=False, comment="주문된 상품 옵션 번호")
@@ -223,7 +244,7 @@ class Event(Base):
     product_category_at_event = Column(Text, nullable=True, comment="이벤트 시점 카테고리")
     stock_at_event = Column(Integer, nullable=True, comment="이벤트 시점 재고")
     coupon_code_at_event = Column(Text, nullable=True, comment="이벤트 시점 쿠폰 코드")
-    
+
     page_url = Column(Text, nullable=True, comment="페이지 URL")
     referrer = Column(Text, nullable=True, comment="리퍼러")
     utm_source = Column(Text, nullable=True, comment="UTM 소스")

@@ -92,18 +92,31 @@ def approve_policy_action(
     db: Session = Depends(get_db)
 ):
     """
-    고위험 사용자에 대한 정책을 승인합니다.
+    고위험 사용자에 대한 정책을 승인하고 쿠폰을 지급합니다.
     """
+    # 1. 사용자 검증 (public.users 테이블에 존재하는지 확인)
+    user = crud.get_user_by_id(db, user_id=request.userId)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with ID {request.userId} not found in public schema."
+        )
+        
     # 정책 정보 조회
-    policy = crud.get_action_recommendation(db, request.policyId, "VH")  # 임시로 VH 사용
+    policy = crud.get_action_recommendation(db, request.policyId, "VH")
     if not policy:
         raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다.")
     
-    # 승인 로직 (실제로는 별도 테이블에 저장)
-    print(f"정책 승인: 사용자 {request.userId}, 정책 {request.policyId}, 사유: {request.reason}")
+    # 쿠폰 지급 로직
+    try:
+        coupon_code = crud.issue_coupon_for_user(db, request.userId, policy.policy_name)
+        print(f"정책 승인 및 쿠폰 지급: 사용자 {request.userId}, 정책 {request.policyId}, 쿠폰: {coupon_code}")
+    except Exception as e:
+        print(f"쿠폰 지급 실패: {e}")
+        raise HTTPException(status_code=500, detail="쿠폰 지급에 실패했습니다.")
     
     return schemas.PolicyActionResponse(
-        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 승인되었습니다.",
+        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 승인되었고 쿠폰이 지급되었습니다.",
         userId=request.userId,
         policyId=request.policyId,
         policyName=policy.policy_name,
@@ -120,18 +133,33 @@ def reject_policy_action(
     db: Session = Depends(get_db)
 ):
     """
-    고위험 사용자에 대한 정책을 거절합니다.
+    고위험 사용자에 대한 정책을 거절하고 해당 데이터를 삭제합니다.
     """
+    # 1. 사용자 검증 (public.users 테이블에 존재하는지 확인)
+    user = crud.get_user_by_id(db, user_id=request.userId)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User with ID {request.userId} not found in public schema."
+        )
+
     # 정책 정보 조회
-    policy = crud.get_action_recommendation(db, request.policyId, "VH")  # 임시로 VH 사용
+    policy = crud.get_action_recommendation(db, request.policyId, "VH")
     if not policy:
         raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다.")
     
-    # 거절 로직 (실제로는 별도 테이블에 저장)
-    print(f"정책 거절: 사용자 {request.userId}, 정책 {request.policyId}, 사유: {request.reason}")
+    # 고위험 사용자 데이터 삭제
+    try:
+        deleted = crud.delete_high_risk_user(db, request.userId, request.policyId)
+        if not deleted:
+            raise HTTPException(status_code=404, detail="삭제할 데이터를 찾을 수 없습니다.")
+        print(f"정책 거절 및 데이터 삭제: 사용자 {request.userId}, 정책 {request.policyId}")
+    except Exception as e:
+        print(f"데이터 삭제 실패: {e}")
+        raise HTTPException(status_code=500, detail="데이터 삭제에 실패했습니다.")
     
     return schemas.PolicyActionResponse(
-        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 거절되었습니다.",
+        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 거절되었고 데이터가 삭제되었습니다.",
         userId=request.userId,
         policyId=request.policyId,
         policyName=policy.policy_name,
