@@ -1,0 +1,54 @@
+.coupon-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.coupon-list {
+  display: grid;
+  gap: 15px;
+}
+
+.coupon-card {
+  border: 2px dashed #007bff;
+  border-radius: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.coupon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.coupon-header h3 {
+  margin: 0;
+  color: #007bff;
+  font-size: 18px;
+}
+
+.coupon-code {
+  background: #007bff;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.discount-amount {
+  font-size: 20px;
+  font-weight: bold;
+  color: #dc3545;
+  margin: 10px 0;
+}
+
+.expires-at {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 5px 0;
+}
