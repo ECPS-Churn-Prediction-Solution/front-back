@@ -95,36 +95,12 @@ const AdminDashboard = () => {
       setLoading(true);
       setError(null);
       const horizonDays = parseInt(range.replace('d', ''), 10);
-
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const horizonDays = parseInt(range.replace('d', ''), 10);
-
-        const [
-          overall,
-          rfm,
-          distribution,
-          highRisk,
-        ] = await Promise.all([
-          getOverallChurnRate(reportDate, horizonDays),
-          getRfmChurnRate(reportDate, horizonDays),
-          getChurnRiskDistribution(reportDate, horizonDays),
-          getHighRiskUsers(reportDate, horizonDays, page, perPage),
-        ]);
-
-        setDashboardData({ overall, rfm, distribution, highRisk });
-
-
       const [overall, rfm, distribution, highRisk] = await Promise.all([
         getOverallChurnRate(reportDate, horizonDays),
         getRfmChurnRate(reportDate, horizonDays),
         getChurnRiskDistribution(reportDate, horizonDays),
-        getHighRiskUsers(reportDate, horizonDays, 1, 10),
+        getHighRiskUsers(reportDate, horizonDays, page, perPage),
       ]);
-
       setDashboardData({ overall, rfm, distribution, highRisk });
     } catch (err) {
       setError(err.message || '데이터를 불러오는 데 실패했습니다.');
@@ -138,12 +114,6 @@ const AdminDashboard = () => {
     fetchDashboardData();
   }, [range, reportDate, page, perPage]);
 
-
-  const sanitizeGrafanaUrl = (raw) => {
-    try {
-      const u = new URL(raw);
-      if (u.pathname.startsWith('/d/') && (u.searchParams.has('panelId') || u.searchParams.has('viewPanel'))) {
-        u.pathname = u.pathname.replace('/d/', '/d-solo/');
 
   // 기간 바뀔 때 페이지 초기화
   useEffect(() => { setPage(1); }, [range]);
