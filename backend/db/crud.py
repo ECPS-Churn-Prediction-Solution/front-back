@@ -689,3 +689,12 @@ def get_high_risk_users(db: Session, report_dt: date, horizon_days: int, page: i
         "total": total_count,
         "items": items
     }
+
+def get_action_recommendation(db: Session, policy_id: int, risk_band: str):
+    """
+    정책 ID와 위험군으로 액션 추천 정보 조회
+    """
+    return db.query(ActionRecommendation).filter(
+        ActionRecommendation.policy_id == policy_id,
+        ActionRecommendation.risk_band == risk_band
+    ).first()

@@ -68,4 +68,44 @@ export async function getHighRiskUsers(reportDt, horizonDays = 30, page = 1, per
   return await apiFetch(`/api/dashboard/high-risk-users?${params}`);
 }
 
+export async function approvePolicyAction(userId, policyId, reason = null) {
+  const body = {
+    userId: userId,
+    policyId: policyId,
+    action: "approve"
+  };
+  
+  if (reason) {
+    body.reason = reason;
+  }
+  
+  return await apiFetch('/api/dashboard/policy-action/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body)
+  });
+}
+
+export async function rejectPolicyAction(userId, policyId, reason = null) {
+  const body = {
+    userId: userId,
+    policyId: policyId,
+    action: "reject"
+  };
+  
+  if (reason) {
+    body.reason = reason;
+  }
+  
+  return await apiFetch('/api/dashboard/policy-action/reject', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body)
+  });
+}
+
 

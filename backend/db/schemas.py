@@ -545,3 +545,17 @@ class HighRiskUserListResponse(BaseModel):
                 ]
             }
         }
+
+class PolicyActionRequest(BaseModel):
+    """정책 승인/거절 요청 스키마"""
+    userId: int
+    policyId: int
+    action: str  # "approve" or "reject"
+    reason: Optional[str] = None
+
+class PolicyActionResponse(BaseModel):
+    """정책 승인/거절 응답 스키마"""
+    userId: int
+    policyId: int
+    policyName: str
+    status: str

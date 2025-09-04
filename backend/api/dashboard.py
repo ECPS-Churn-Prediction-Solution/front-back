@@ -3,7 +3,7 @@
 고객 이탈률(Churn Rate) 및 위험도 관련 지표 제공
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
 from datetime import date
 from typing import Optional
@@ -81,3 +81,59 @@ def read_high_risk_users(
     """
     data = crud.get_high_risk_users(db=db, report_dt=reportDt, horizon_days=horizonDays, page=page, per_page=per_page)
     return data
+
+@router.post(
+    "/policy-action/approve",
+    response_model=schemas.PolicyActionResponse,
+    summary="정책 승인"
+)
+def approve_policy_action(
+    request: schemas.PolicyActionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    고위험 사용자에 대한 정책을 승인합니다.
+    """
+    # 정책 정보 조회
+    policy = crud.get_action_recommendation(db, request.policyId, "VH")  # 임시로 VH 사용
+    if not policy:
+        raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다.")
+    
+    # 승인 로직 (실제로는 별도 테이블에 저장)
+    print(f"정책 승인: 사용자 {request.userId}, 정책 {request.policyId}, 사유: {request.reason}")
+    
+    return schemas.PolicyActionResponse(
+        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 승인되었습니다.",
+        userId=request.userId,
+        policyId=request.policyId,
+        policyName=policy.policy_name,
+        status="approved"
+    )
+
+@router.post(
+    "/policy-action/reject",
+    response_model=schemas.PolicyActionResponse,
+    summary="정책 거절"
+)
+def reject_policy_action(
+    request: schemas.PolicyActionRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    고위험 사용자에 대한 정책을 거절합니다.
+    """
+    # 정책 정보 조회
+    policy = crud.get_action_recommendation(db, request.policyId, "VH")  # 임시로 VH 사용
+    if not policy:
+        raise HTTPException(status_code=404, detail="정책을 찾을 수 없습니다.")
+    
+    # 거절 로직 (실제로는 별도 테이블에 저장)
+    print(f"정책 거절: 사용자 {request.userId}, 정책 {request.policyId}, 사유: {request.reason}")
+    
+    return schemas.PolicyActionResponse(
+        message=f"사용자 {request.userId}에 대한 '{policy.policy_name}' 정책이 거절되었습니다.",
+        userId=request.userId,
+        policyId=request.policyId,
+        policyName=policy.policy_name,
+        status="rejected"
+    )
