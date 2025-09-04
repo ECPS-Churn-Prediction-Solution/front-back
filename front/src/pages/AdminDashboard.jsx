@@ -7,6 +7,8 @@ import {
   getRfmChurnRate,
   getChurnRiskDistribution,
   getHighRiskUsers,
+  approvePolicyAction,
+  rejectPolicyAction,
 } from '../lib/api';
 
 // Grafana 임베드는 제거되었습니다.
@@ -22,16 +24,77 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('risk');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [actionLoading, setActionLoading] = useState({});
   const [trend, setTrend] = useState(null);
   const [trendLoading, setTrendLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(50);
+
+  // 정책 승인 핸들러
+  const handleApprove = async (userId, policyId) => {
+    const actionKey = `${userId}-${policyId}`;
+    const reason = prompt("승인 사유를 입력해주세요 :");
+    
+    if (reason === null) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [actionKey]: 'approving' }));
+      
+      const result = await approvePolicyAction(userId, policyId, reason || "운영자 승인");
+      
+      const message = result.message || `'${result.policyName}' 정책이 승인되었습니다.`;
+      alert(`✅ 정책 승인 성공하였습니다\n${message}`);
+      console.log('승인 완료:', result);
+      
+      await fetchDashboardData();
+      
+    } catch (error) {
+      console.error('승인 실패:', error);
+      alert(`❌ 승인 실패: ${error.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: null }));
+    }
+  };
+
+  // 정책 거절 핸들러
+  const handleReject = async (userId, policyId) => {
+    const actionKey = `${userId}-${policyId}`;
+    const reason = prompt("거절 사유를 입력해주세요 :");
+    
+    if (reason === null) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [actionKey]: 'rejecting' }));
+      
+      const result = await rejectPolicyAction(userId, policyId, reason || "운영자 거절");
+      
+      const message = result.message || `'${result.policyName}' 정책이 거절되었습니다.`;
+      alert(`❌ 정책 거절 성공하였습니다\n${message}`);
+      console.log('거절 완료:', result);
+      
+      await fetchDashboardData();
+      
+    } catch (error) {
+      console.error('거절 실패:', error);
+      alert(`❌ 거절 실패: ${error.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [actionKey]: null }));
+    }
+  };
+
 
   const reportDate = useMemo(() => {
     // 더미 데이터 기준일 고정
     const now = new Date('2025-08-29T12:00:00Z');
     return getISODate(now);
   }, [range]);
+
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const horizonDays = parseInt(range.replace('d', ''), 10);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -54,21 +117,33 @@ const AdminDashboard = () => {
 
         setDashboardData({ overall, rfm, distribution, highRisk });
 
-        // 다른 데이터 확인용
-        console.log('RFM Segments:', rfm);
-        console.log('Churn Risk Distribution:', distribution);
-        console.log('High Risk Users:', highRisk);
 
-      } catch (err) {
-        setError(err.message || '데이터를 불러오는 데 실패했습니다.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      const [overall, rfm, distribution, highRisk] = await Promise.all([
+        getOverallChurnRate(reportDate, horizonDays),
+        getRfmChurnRate(reportDate, horizonDays),
+        getChurnRiskDistribution(reportDate, horizonDays),
+        getHighRiskUsers(reportDate, horizonDays, 1, 10),
+      ]);
 
+      setDashboardData({ overall, rfm, distribution, highRisk });
+    } catch (err) {
+      setError(err.message || '데이터를 불러오는 데 실패했습니다.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboardData();
   }, [range, reportDate, page, perPage]);
+
+
+  const sanitizeGrafanaUrl = (raw) => {
+    try {
+      const u = new URL(raw);
+      if (u.pathname.startsWith('/d/') && (u.searchParams.has('panelId') || u.searchParams.has('viewPanel'))) {
+        u.pathname = u.pathname.replace('/d/', '/d-solo/');
 
   // 기간 바뀔 때 페이지 초기화
   useEffect(() => { setPage(1); }, [range]);
@@ -352,17 +427,36 @@ const AdminDashboard = () => {
                   </tr>
                   </thead>
                   <tbody>
-                  {dashboardData?.highRisk?.items.map(item => (
+                  {dashboardData?.highRisk?.items.map(item => {
+                    const actionKey = `${item.userId}-${item.action.policyId}`;
+                    const isApproving = actionLoading[actionKey] === 'approving';
+                    const isRejecting = actionLoading[actionKey] === 'rejecting';
+                    const isProcessing = isApproving || isRejecting;
+                    
+                    return (
                       <tr key={item.userId}>
                         <td>{item.userId}</td>
                         <td>{item.riskBand}</td>
                         <td>{item.action.policy_name}</td>
                         <td>
-                          <button className="approve-btn">승인</button>
-                          <button className="reject-btn">거절</button>
+                          <button 
+                            className="approve-btn"
+                            onClick={() => handleApprove(item.userId, item.action.policyId)}
+                            disabled={isProcessing}
+                          >
+                            {isApproving ? '승인중...' : '승인'}
+                          </button>
+                          <button 
+                            className="reject-btn"
+                            onClick={() => handleReject(item.userId, item.action.policyId)}
+                            disabled={isProcessing}
+                          >
+                            {isRejecting ? '거절중...' : '거절'}
+                          </button>
                         </td>
                       </tr>
-                  ))}
+                    );
+                  })}
                   </tbody>
                 </table>
               </div>
