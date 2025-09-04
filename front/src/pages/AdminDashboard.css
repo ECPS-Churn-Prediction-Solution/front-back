@@ -215,4 +215,43 @@
   font-weight: 600;
 }
 
+.policy-table-section {
+  margin-top: 20px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 14px;
+}
 
+.policy-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.policy-table th, .policy-table td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.policy-table th {
+  background-color: #f8fafc;
+}
+
+.approve-btn, .reject-btn {
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  margin-right: 5px;
+}
+
+.approve-btn {
+  background-color: #28a745;
+  color: white;
+}
+
+.reject-btn {
+  background-color: #dc3545;
+  color: white;
+}

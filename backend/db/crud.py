@@ -660,10 +660,11 @@ def get_high_risk_users(db: Session, report_dt: date, horizon_days: int, page: i
     )
     total_count = total_count_query.count()
 
-    # Query for the paginated items with join
+    # Query for the paginated items with join - risk_band로 매칭
     users_query = total_count_query.join(
         ActionRecommendation,
-        HighRiskUser.policy_id == ActionRecommendation.policy_id
+        (HighRiskUser.policy_id == ActionRecommendation.policy_id) &
+        (HighRiskUser.risk_band == ActionRecommendation.risk_band)
     ).order_by(
         HighRiskUser.churn_probability.desc()
     ).offset(offset).limit(per_page)
