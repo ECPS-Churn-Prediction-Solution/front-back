@@ -120,11 +120,11 @@ const ProductDetailPage = () => {
     navigate('/checkout', {
       state: {
         items: [{
-          variantId: variant.variant_id,
-          qty: quantity,
+          variant_id: variant.variant_id,
+          quantity: quantity,
           price: product.price,
-          name: product.product_name,
-          image: product.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734"
+          product_name: product.product_name,
+          image_url: product.image_url || "https://api.builder.io/api/v1/image/assets/TEMP/68fa811baecae42e4253dd9f1bba64b08c4ab399?width=734"
         }],
         subtotal: product.price * quantity,
       },
