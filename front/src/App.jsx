@@ -1,22 +1,29 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import MainPage from './pages/MainPage';
-import CartPage from './pages/CartPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentPage from './pages/PaymentPage';
-import OrderSummaryPage from './pages/OrderSummaryPage';
-import CouponPage from './pages/CouponPage';
-import MyPage from './pages/MyPage';
-import ProductListPage from './pages/ProductListPage';
-import ProductDetailPage from './pages/ProductDetailPage';
-import './App.css';
-import AdminDashboard from './pages/AdminDashboard';
-import { AuthProvider } from './lib/authContext.jsx';
-import RouteTracker from './lib/RouteTracker.jsx';
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainPage from "./pages/MainPage";
+import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
+import PaymentPage from "./pages/PaymentPage";
+import OrderSummaryPage from "./pages/OrderSummaryPage";
+import CouponPage from "./pages/CouponPage";
+import MyPage from "./pages/MyPage";
+import ProductListPage from "./pages/ProductListPage";
+import ProductDetailPage from "./pages/ProductDetailPage";
+import "./App.css";
+
+// Admin 관련 페이지 및 레이아웃 import
+import AdminLayout from "./pages/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminListPage from "./pages/AdminListPage";
+
+import { AuthProvider } from "./lib/authContext.jsx";
+import RouteTracker from "./lib/RouteTracker.jsx";
 
 function App() {
   return (
-    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+    <BrowserRouter
+      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+    >
       <AuthProvider>
         <RouteTracker />
         <Routes>
@@ -29,7 +36,11 @@ function App() {
           <Route path="/me" element={<MyPage />} />
           <Route path="/products" element={<ProductListPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="admin-list" element={<AdminListPage />} />
+          </Route>
         </Routes>
       </AuthProvider>
     </BrowserRouter>
