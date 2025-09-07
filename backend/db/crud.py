@@ -6,13 +6,17 @@
 from sqlalchemy.orm import Session
 from db.models import (
     User, Product, Category, CartItem, Order, OrderItem, ProductVariant, UserInterest,
-    DailyChurnKpi, ChurnSegmentAggr, ChurnRiskDistribution, HighRiskUser,ActionRecommendation
+    DailyChurnKpi, ChurnSegmentAggr, ChurnRiskDistribution, HighRiskUser,ActionRecommendation,Coupon
 )
 from db.schemas import UserRegisterRequest, OrderCreateRequest, CartItemAdd, DirectOrderRequest
 from api.auth import get_password_hash, verify_password
 from typing import Optional, List
 from decimal import Decimal
-from datetime import date
+from datetime import date, datetime, timedelta
+import random
+import string
+from sqlalchemy import text
+
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """
@@ -265,7 +269,7 @@ def get_cart_item_for_user(db: Session, cart_item_id: int, user_id: int) -> Opti
     return db.query(CartItem).filter(
         CartItem.cart_item_id == cart_item_id,
         CartItem.user_id == user_id,
-    ).first()
+        ).first()
 
 def remove_cart_item_by_id(db: Session, cart_item_id: int) -> bool:
     """
@@ -694,9 +698,6 @@ def get_action_recommendation(db: Session, policy_id: int, risk_band: str):
 
 def get_user_coupons(db: Session, user_id: int):
     """사용자의 사용 가능한 쿠폰 목록 조회"""
-    from db.models import Coupon
-    from datetime import datetime
-
     return db.query(Coupon).filter(
         Coupon.user_id == user_id,
         Coupon.expires_at > datetime.now(),
@@ -705,9 +706,6 @@ def get_user_coupons(db: Session, user_id: int):
 
 def get_coupon_by_code(db: Session, user_id: int, coupon_code: str):
     """쿠폰 코드로 쿠폰 조회"""
-    from db.models import Coupon
-    from datetime import datetime
-
     return db.query(Coupon).filter(
         Coupon.coupon_code == coupon_code,
         Coupon.user_id == user_id,
@@ -717,11 +715,6 @@ def get_coupon_by_code(db: Session, user_id: int, coupon_code: str):
 
 def issue_coupon_for_user(db: Session, user_id: int, policy_name: str) -> str:
     """사용자에게 쿠폰을 지급합니다."""
-    from datetime import datetime, timedelta
-    from db.models import Coupon
-    import random
-    import string
-
     # 쿠폰 코드 생성
     coupon_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
 
@@ -757,19 +750,26 @@ def delete_high_risk_user(db: Session, user_id: int, policy_id: int) -> bool:
     """
     고위험 사용자 데이터를 삭제합니다.
     """
-    from sqlalchemy import text
-
     try:
         result = db.execute(text("""
-            DELETE FROM mart.high_risk_users
-            WHERE user_id = :user_id AND policy_id = :policy_id
-        """), {
-            "user_id": user_id,
-            "policy_id": policy_id
-        })
+                                 DELETE FROM mart.high_risk_users
+                                 WHERE user_id = :user_id AND policy_id = :policy_id
+                                 """), {
+                                "user_id": user_id,
+                                "policy_id": policy_id
+                            })
         db.commit()
         return result.rowcount > 0
     except Exception as e:
         print(f"고위험 사용자 삭제 실패: {e}")
         db.rollback()
         return False
+
+# ✨ --- 여기에 새 함수 추가 --- ✨
+def get_action_recommendation_by_id(db: Session, policy_id: int):
+    """
+    정책 ID로 액션 추천 정보 조회 (위험 그룹 무관)
+    """
+    return db.query(ActionRecommendation) \
+        .filter(ActionRecommendation.policy_id == policy_id) \
+        .first()

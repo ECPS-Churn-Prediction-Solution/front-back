@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from db.database import get_db
 from db.schemas import UserRegisterRequest, UserLoginRequest, UserResponse, LoginResponse, MessageResponse
+from db import crud  # crud 모듈 import
 from db.crud import get_user_by_email, create_user, authenticate_user, get_user_by_id, get_user_coupons
 from api.logs import log_event
 import logging
@@ -244,24 +245,24 @@ async def logout_user(request: Request):
 
 @router.get("/my-coupons")
 async def get_my_coupons(
-    current_user: UserResponse = Depends(get_current_user),
-    db: Session = Depends(get_db)
+        current_user: UserResponse = Depends(get_current_user),
+        db: Session = Depends(get_db)
 ):
     """현재 사용자의 사용 가능한 쿠폰 목록"""
     coupons = crud.get_user_coupons(db, current_user.user_id)
 
     coupon_list = []
     for coupon in coupons:
-        # coupon.policy 관계를 통해 policy_name에 접근합니다.
-        policy_name = coupon.policy.policy_name if coupon.policy else "알 수 없는 정책"
+        # coupon 객체에서 policy_name 속성을 직접 사용하도록 수정
+        policy_name = coupon.policy_name if coupon.policy_name else "알 수 없는 정책"
 
         coupon_list.append({
             "coupon_id": coupon.coupon_id,
             "coupon_code": coupon.coupon_code,
             "discount_amount": coupon.discount_amount,
             "policy_name": policy_name,  # 수정된 부분
-            "expires_at": coupon.expires_at.isoformat(), # .isoformat() 추가
-            "created_at": coupon.created_at.isoformat()  # .isoformat() 추가
+            "expires_at": coupon.expires_at.isoformat(),
+            "created_at": coupon.created_at.isoformat()
         })
 
     return coupon_list
