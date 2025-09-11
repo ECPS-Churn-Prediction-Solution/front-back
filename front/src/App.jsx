@@ -15,6 +15,7 @@ import "./App.css";
 import AdminLayout from "./pages/AdminLayout";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminListPage from "./pages/AdminListPage";
+import AdminLoginPage from "./pages/AdminLogin.jsx"; // 추가
 
 import { AuthProvider } from "./lib/authContext.jsx";
 import RouteTracker from "./lib/RouteTracker.jsx";
@@ -36,6 +37,9 @@ function App() {
           <Route path="/me" element={<MyPage />} />
           <Route path="/products" element={<ProductListPage />} />
           <Route path="/products/:id" element={<ProductDetailPage />} />
+
+          {/* 관리자 로그인 페이지 라우트 추가 */}
+          <Route path="/admin/login" element={<AdminLoginPage />} />
 
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<AdminDashboard />} />

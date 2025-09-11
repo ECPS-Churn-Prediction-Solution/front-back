@@ -107,5 +107,3 @@ export async function rejectPolicyAction(userId, policyId, reason = null) {
     body: JSON.stringify(body)
   });
 }
-
-
