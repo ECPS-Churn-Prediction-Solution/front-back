@@ -99,6 +99,7 @@ class UserResponse(BaseModel):
     birthdate: date = Field(..., description="생년월일")
     phone_number: Optional[str] = Field(None, description="전화번호")
     created_at: datetime = Field(..., description="가입일시")
+    is_admin: bool = Field(..., description="관리자 여부")
 
     class Config:
         from_attributes = True

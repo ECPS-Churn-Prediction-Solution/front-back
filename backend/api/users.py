@@ -27,6 +27,10 @@ async def options_register():
 async def options_login():
     return {"message": "OK"}
 
+@router.options("/admin/login")
+async def options_admin_login():
+    return {"message": "OK"}
+
 @router.options("/me")
 async def options_me():
     return {"message": "OK"}
@@ -66,7 +70,8 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> UserRes
         gender=user.gender,
         birthdate=user.birthdate,
         phone_number=user.phone_number,
-        created_at=user.created_at
+        created_at=user.created_at,
+        is_admin=user.is_admin
     )
 
 @router.post("/register", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
@@ -184,7 +189,8 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
         gender=user.gender,
         birthdate=user.birthdate,
         phone_number=user.phone_number,
-        created_at=user.created_at
+        created_at=user.created_at,
+        is_admin=user.is_admin
     )
 
     logger.info(f"로그인 성공: {user.email} (ID: {user.user_id})")
@@ -196,6 +202,54 @@ async def login_user(login_data: UserLoginRequest, request: Request, db: Session
 
     return LoginResponse(
         message="로그인 성공",
+        user=user_response
+    )
+
+@router.post("/admin/login", response_model=LoginResponse)
+async def admin_login(login_data: UserLoginRequest, request: Request, db: Session = Depends(get_db)):
+    """
+    관리자 로그인
+    이메일, 비밀번호 인증 후 관리자 여부 확인
+    """
+    logger.info(f"관리자 로그인 시도: {login_data.email}")
+    
+    # 사용자 인증
+    user = authenticate_user(db, login_data.email, login_data.password)
+    if not user:
+        logger.warning(f"관리자 로그인 실패 (인증 실패): {login_data.email}")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="이메일 또는 비밀번호가 올바르지 않습니다.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    # 관리자 여부 확인
+    if not user.is_admin:
+        logger.warning(f"관리자 로그인 실패 (권한 없음): {login_data.email}")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="관리자 권한이 없습니다."
+        )
+
+    # 세션에 사용자 ID 저장
+    request.session["user_id"] = user.user_id
+    
+    # 사용자 응답 데이터 생성
+    user_response = UserResponse(
+        user_id=user.user_id,
+        email=user.email,
+        user_name=user.user_name,
+        gender=user.gender,
+        birthdate=user.birthdate,
+        phone_number=user.phone_number,
+        created_at=user.created_at,
+        is_admin=user.is_admin
+    )
+    
+    logger.info(f"관리자 로그인 성공: {user.email} (ID: {user.user_id})")
+    
+    return LoginResponse(
+        message="관리자 로그인 성공",
         user=user_response
     )
 
@@ -241,7 +295,6 @@ async def logout_user(request: Request):
         return MessageResponse(message="로그아웃이 완료되었습니다.")
     else:
         return MessageResponse(message="이미 로그아웃된 상태입니다.")
-
 
 @router.get("/my-coupons")
 async def get_my_coupons(

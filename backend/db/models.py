@@ -59,6 +59,8 @@ class User(Base):
     address_detail = Column(String(255), nullable=True, comment="상세 주소")
     created_at = Column(TIMESTAMP, server_default=func.now(), comment="가입일")
 
+    is_admin = Column(Boolean, server_default='false', nullable=False, comment="관리자 여부")
+   
     # 관계 설정
     interests = relationship("UserInterest", back_populates="user", cascade="all, delete-orphan")
     orders = relationship("Order", back_populates="user")

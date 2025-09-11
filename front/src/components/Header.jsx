@@ -43,7 +43,9 @@ const Header = () => {
         <Link to="/products" className="nav-link">Products</Link>
         <a href="#" className="nav-link">Collections</a>
         <a href="#" className="nav-link">New</a>
-        <Link to="/admin" className="nav-link">Admin</Link>
+        {currentUser && currentUser.is_admin && (
+          <Link to="/admin" className="nav-link">Admin</Link>
+        )}
       </nav>
 
       <div className="logo-container">

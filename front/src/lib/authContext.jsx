@@ -8,16 +8,25 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const HINT_KEY = 'auth-has-session';
 
+  const setAuthData = useCallback((newUser) => {
+    setUser(newUser);
+    if (newUser) {
+      localStorage.setItem(HINT_KEY, '1');
+    } else {
+      localStorage.removeItem(HINT_KEY);
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     try {
       const me = await apiFetch('/api/users/me', { silent401: true });
-      setUser(me);
+      setAuthData(me);
     } catch (e) {
-      setUser(null);
+      setAuthData(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [setAuthData]);
 
   useEffect(() => {
     const hasHint = localStorage.getItem(HINT_KEY) === '1';
@@ -33,10 +42,9 @@ export function AuthProvider({ children }) {
       method: 'POST',
       body: { email, password },
     });
-    setUser(res.user);
-    localStorage.setItem(HINT_KEY, '1');
+    setAuthData(res.user);
     return res.user;
-  }, []);
+  }, [setAuthData]);
 
   const register = useCallback(async (payload) => {
     await apiFetch('/api/users/register', {
@@ -48,16 +56,13 @@ export function AuthProvider({ children }) {
 
   const logout = useCallback(async () => {
     await apiFetch('/api/users/logout', { method: 'POST' });
-    setUser(null);
-    localStorage.removeItem(HINT_KEY);
-  }, []);
+    setAuthData(null);
+  }, [setAuthData]);
 
-  const value = { user, loading, refresh, login, register, logout };
+  const value = { user, loading, refresh, login, register, logout, setAuthData };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
   return useContext(AuthContext);
 }
-
-
