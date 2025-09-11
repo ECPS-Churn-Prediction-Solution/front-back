@@ -58,12 +58,12 @@ export async function getChurnRiskDistribution(reportDt, horizonDays = 30) {
   return await apiFetch(`/api/dashboard/churn-risk/distribution?${params}`);
 }
 
-export async function getHighRiskUsers(reportDt, horizonDays = 30, page = 1, per_page = 10) {
+export async function getHighRiskUsers(reportDt, horizonDays = 30, page = 1, perPage = 10) {
   const params = new URLSearchParams({
     reportDt: reportDt,
     horizonDays: horizonDays,
     page: page,
-    per_page: per_page,
+    per_page: perPage,
   });
   return await apiFetch(`/api/dashboard/high-risk-users?${params}`);
 }
@@ -111,4 +111,3 @@ export async function rejectPolicyAction(userId, policyId, reason = null) {
 export async function getMyCoupons() {
   return await apiFetch('/api/users/my-coupons');
 }
-

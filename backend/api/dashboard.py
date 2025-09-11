@@ -84,7 +84,7 @@ def read_high_risk_users(
         reportDt: date = Query(..., description="보고서 기준일 (YYYY-MM-DD)"),
         horizonDays: int = Query(30, description="예측 기간 (일)"),
         page: int = Query(1, ge=1, description="페이지 번호"),
-        per_page: int = Query(10, ge=1, le=100, description="페이지당 항목 수"),
+        per_page: int = Query(10, ge=1, le=200, description="페이지당 항목 수"),
         db: Session = Depends(get_db)
 ):
     """

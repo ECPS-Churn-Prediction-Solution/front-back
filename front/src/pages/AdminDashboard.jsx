@@ -436,7 +436,7 @@ const AdminDashboard = () => {
                     <option value={20}>20</option>
                     <option value={50}>50</option>
                     <option value={100}>100</option>
-
+                    <option value={200}>200</option>
                   </select>
                 </label>
                 <button
@@ -455,71 +455,6 @@ const AdminDashboard = () => {
                 >
                   다음
                 </button>
-              {false && <section className="dashboard-hint" />}
-              <div className="policy-table-section">
-                <div className="panel-title">대응정책 승인 대기</div>
-                <div className="policy-toolbar">
-                  <div>총 {dashboardData?.highRisk?.total?.toLocaleString?.() || 0}건</div>
-                  <div className="policy-controls">
-                    <label>표시 개수
-                      <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="range-select" style={{ marginLeft: 6 }}>
-                        <option value={10}>10</option>
-                        <option value={20}>20</option>
-                        <option value={50}>50</option>
-                        <option value={100}>100</option>
-                        <option value={200}>200</option>
-                      </select>
-                    </label>
-                    <button className="approve-btn" onClick={() => setPage(p => Math.max(1, p - 1))}>이전</button>
-                    <button className="approve-btn" onClick={() => {
-                      const total = dashboardData?.highRisk?.total || 0;
-                      const maxPage = Math.max(1, Math.ceil(total / perPage));
-                      setPage(p => Math.min(maxPage, p + 1));
-                    }}>다음</button>
-                  </div>
-                </div>
-                <table className="policy-table">
-                  <thead>
-                  <tr>
-                    <th>고객 ID</th>
-                    <th>위험군</th>
-                    <th>대응정책</th>
-                    <th>실행</th>
-                  </tr>
-                  </thead>
-                  <tbody>
-                  {dashboardData?.highRisk?.items.map(item => {
-                    const actionKey = `${item.userId}-${item.action.policyId}`;
-                    const isApproving = actionLoading[actionKey] === 'approving';
-                    const isRejecting = actionLoading[actionKey] === 'rejecting';
-                    const isProcessing = isApproving || isRejecting;
-                    
-                    return (
-                      <tr key={item.userId}>
-                        <td>{item.userId}</td>
-                        <td>{item.riskBand}</td>
-                        <td>{item.action.policy_name}</td>
-                        <td>
-                          <button 
-                            className="approve-btn"
-                            onClick={() => handleApprove(item.userId, item.action.policyId)}
-                            disabled={isProcessing}
-                          >
-                            {isApproving ? '승인중...' : '승인'}
-                          </button>
-                          <button 
-                            className="reject-btn"
-                            onClick={() => handleReject(item.userId, item.action.policyId)}
-                            disabled={isProcessing}
-                          >
-                            {isRejecting ? '거절중...' : '거절'}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  </tbody>
-                </table>
               </div>
             </div>
             <table className="policy-table">
