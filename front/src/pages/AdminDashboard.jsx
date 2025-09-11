@@ -39,7 +39,23 @@ const AdminDashboard = () => {
       const message =
         result.message || `'${result.policyName}' 정책이 승인되었습니다.`;
       alert(`✅ 정책 승인 성공하였습니다\n${message}`);
+
       await fetchDashboardData();
+
+      console.log('승인 완료:', result);
+      
+      // 승인된 항목을 즉시 제거
+      setDashboardData(prev => ({
+        ...prev,
+        highRisk: {
+          ...prev.highRisk,
+          items: prev.highRisk.items.filter(item => 
+            !(item.userId === userId && item.action.policyId === policyId)
+          ),
+          total: prev.highRisk.total - 1
+        }
+      }));
+      
     } catch (error) {
       alert(`❌ 승인 실패: ${error.message}`);
     } finally {
@@ -61,7 +77,23 @@ const AdminDashboard = () => {
       const message =
         result.message || `'${result.policyName}' 정책이 거절되었습니다.`;
       alert(`❌ 정책 거절 성공하였습니다\n${message}`);
+
       await fetchDashboardData();
+
+      console.log('거절 완료:', result);
+      
+      // 거절된 항목을 즉시 제거
+      setDashboardData(prev => ({
+        ...prev,
+        highRisk: {
+          ...prev.highRisk,
+          items: prev.highRisk.items.filter(item => 
+            !(item.userId === userId && item.action.policyId === policyId)
+          ),
+          total: prev.highRisk.total - 1
+        }
+      }));
+      
     } catch (error) {
       alert(`❌ 거절 실패: ${error.message}`);
     } finally {
@@ -423,6 +455,71 @@ const AdminDashboard = () => {
                 >
                   다음
                 </button>
+              {false && <section className="dashboard-hint" />}
+              <div className="policy-table-section">
+                <div className="panel-title">대응정책 승인 대기</div>
+                <div className="policy-toolbar">
+                  <div>총 {dashboardData?.highRisk?.total?.toLocaleString?.() || 0}건</div>
+                  <div className="policy-controls">
+                    <label>표시 개수
+                      <select value={perPage} onChange={(e) => { setPerPage(Number(e.target.value)); setPage(1); }} className="range-select" style={{ marginLeft: 6 }}>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={200}>200</option>
+                      </select>
+                    </label>
+                    <button className="approve-btn" onClick={() => setPage(p => Math.max(1, p - 1))}>이전</button>
+                    <button className="approve-btn" onClick={() => {
+                      const total = dashboardData?.highRisk?.total || 0;
+                      const maxPage = Math.max(1, Math.ceil(total / perPage));
+                      setPage(p => Math.min(maxPage, p + 1));
+                    }}>다음</button>
+                  </div>
+                </div>
+                <table className="policy-table">
+                  <thead>
+                  <tr>
+                    <th>고객 ID</th>
+                    <th>위험군</th>
+                    <th>대응정책</th>
+                    <th>실행</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {dashboardData?.highRisk?.items.map(item => {
+                    const actionKey = `${item.userId}-${item.action.policyId}`;
+                    const isApproving = actionLoading[actionKey] === 'approving';
+                    const isRejecting = actionLoading[actionKey] === 'rejecting';
+                    const isProcessing = isApproving || isRejecting;
+                    
+                    return (
+                      <tr key={item.userId}>
+                        <td>{item.userId}</td>
+                        <td>{item.riskBand}</td>
+                        <td>{item.action.policy_name}</td>
+                        <td>
+                          <button 
+                            className="approve-btn"
+                            onClick={() => handleApprove(item.userId, item.action.policyId)}
+                            disabled={isProcessing}
+                          >
+                            {isApproving ? '승인중...' : '승인'}
+                          </button>
+                          <button 
+                            className="reject-btn"
+                            onClick={() => handleReject(item.userId, item.action.policyId)}
+                            disabled={isProcessing}
+                          >
+                            {isRejecting ? '거절중...' : '거절'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  </tbody>
+                </table>
               </div>
             </div>
             <table className="policy-table">
